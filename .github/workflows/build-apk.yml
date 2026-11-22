@@ -29,10 +29,10 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Prepare files (Create www and config)
+      - name: Prepare files
         run: |
           mkdir -p www
-          cp index.html www/ 2>/dev/null || echo "index.html copied or skipped"
+          if [ -f index.html ]; then cp index.html www/; fi
           echo '{"appId":"com.shaghaf.kids","appName":"shaghaf-kids-app","webDir":"www"}' > capacitor.config.json
 
       - name: Add Android platform
