@@ -29,22 +29,36 @@ jobs:
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Prepare files
+      - name: Prepare web assets and Capacitor config
         run: |
           mkdir -p www
-          if [ -f index.html ]; then cp index.html www/; fi
-          echo '{"appId":"com.shaghaf.kids","appName":"shaghaf-kids-app","webDir":"www"}' > capacitor.config.json
+          if [ -f "index.html" ]; then
+            cp index.html www/
+          fi
+          if [ ! -f "www/index.html" ]; then
+            echo "<h1>Shaghaf Kids</h1>" > www/index.html
+          fi
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.shaghaf.kids",
+            "appName": "Shaghaf Kids App",
+            "webDir": "www"
+          }
+          EOF
 
-      - name: Add Android platform
-        run: npx cap add android
+      - name: Add Android platform if missing
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
 
-      - name: Sync web assets
+      - name: Sync Capacitor web assets
         run: npx cap sync android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build APK (Debug)
+      - name: Build Debug APK
         working-directory: android
         run: ./gradlew assembleDebug
 
