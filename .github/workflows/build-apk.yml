@@ -55,6 +55,24 @@ jobs:
       - name: Sync Capacitor web assets
         run: npx cap sync android
 
+      - name: Fix duplicate Kotlin stdlib classes
+        run: |
+          python3 -c '
+          p = "android/app/build.gradle"
+          with open(p, "r", encoding="utf-8") as f:
+              content = f.read()
+          block = """
+          configurations.all {
+              exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+              exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+          }
+          """
+          if "kotlin-stdlib-jdk7" not in content:
+              content = content + "\n" + block
+              with open(p, "w", encoding="utf-8") as f:
+                  f.write(content)
+          '
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
