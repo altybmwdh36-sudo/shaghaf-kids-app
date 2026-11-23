@@ -2,36 +2,22 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0F2942" />
-  <meta name="description" content="منصة وتطبيق شغف التفاعلي للأطفال: تجارب علمية، اختراعات، وقصص التاريخ العربي والإسلامي في بيئة آمنة وممتعة." />
-  <title>شَغَف — عالم الاكتشاف والفضول العلمي للأطفال</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>شَغَف — منصة مقاطع الأطفال الهادفة والقرآن والأناشيد</title>
   <style>
     :root {
       --navy: #0F2942;
       --navy-light: #1B4266;
       --amber: #F59E0B;
       --amber-dark: #D97706;
-      --amber-soft: #FEF3C7;
       --teal: #0D9488;
-      --teal-soft: #CCFBF1;
-      --coral: #EF4444;
-      --coral-soft: #FEE2E2;
-      --purple: #7C3AED;
-      --purple-soft: #EDE9FE;
-      --bg: #F6F8FB;
+      --danger: #DC2626;
+      --success: #059669;
+      --bg: #F1F5F9;
       --card: #FFFFFF;
-      --text: #10243E;
-      --muted: #5A6F85;
+      --text: #0F172A;
+      --muted: #475569;
       --border: #E2E8F0;
-      --radius-lg: 24px;
-      --radius-md: 18px;
-      --radius-sm: 12px;
-      --shadow: 0 10px 30px rgba(15, 41, 66, 0.08);
-      --shadow-sm: 0 4px 14px rgba(15, 41, 66, 0.05);
     }
 
     * {
@@ -41,1372 +27,597 @@
 
     body {
       margin: 0;
-      font-family: 'Cairo', 'Tajawal', sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.65;
+      line-height: 1.6;
+    }
+
+    .gate-screen {
       min-height: 100vh;
-      padding-bottom: 88px;
-    }
-
-    /* Top Header */
-    .app-header {
-      background: linear-gradient(135deg, var(--navy) 0%, #173B5C 65%, #1F537A 100%);
-      color: #fff;
-      padding: 16px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      box-shadow: 0 6px 24px rgba(15, 41, 66, 0.18);
-    }
-
-    .header-inner {
-      max-width: 1120px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      background: linear-gradient(145deg, #FBBF24, #F59E0B);
-      display: grid;
-      place-items: center;
-      color: var(--navy);
-      font-weight: 900;
-      font-size: 24px;
-      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
-      position: relative;
-    }
-
-    .brand-logo::after {
-      content: "✦";
-      position: absolute;
-      top: -5px;
-      left: -4px;
-      font-size: 13px;
-      color: #FFFBEB;
-    }
-
-    .brand-title {
-      font-size: 22px;
-      font-weight: 900;
-      margin: 0;
-      letter-spacing: -0.3px;
-    }
-
-    .brand-sub {
-      font-size: 12px;
-      color: #CBD5E1;
-      margin: 0;
-    }
-
-    .header-stats {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .stat-pill {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      backdrop-filter: blur(8px);
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .parent-btn {
-      background: #FFFBEB;
-      color: var(--navy);
-      border: none;
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-family: inherit;
-      font-weight: 800;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: transform 0.15s ease, background 0.15s ease;
-    }
-
-    .parent-btn:hover {
-      transform: translateY(-1px);
-      background: #FEF3C7;
-    }
-
-    /* Main Container */
-    .container {
-      max-width: 1120px;
-      margin: 20px auto 0;
-      padding: 0 16px;
-    }
-
-    /* Safety & Timer Banner */
-    .safe-strip {
-      background: linear-gradient(90deg, #ECFDF5, #F0FDFA);
-      border: 1px solid #A7F3D0;
-      color: #065F46;
-      border-radius: var(--radius-md);
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      font-size: 13.5px;
-      font-weight: 600;
-    }
-
-    /* Navigation Tabs */
-    .nav-tabs {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 22px;
-    }
-
-    @media (max-width: 720px) {
-      .nav-tabs {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    .tab-btn {
-      background: var(--card);
-      border: 2px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 13px 14px;
-      font-family: inherit;
-      font-size: 14.5px;
-      font-weight: 800;
-      color: var(--text);
-      cursor: pointer;
+      background: linear-gradient(160deg, var(--navy), #091929);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.18s ease;
+      padding: 20px;
     }
 
-    .tab-btn.active {
-      background: var(--navy);
-      color: #fff;
-      border-color: var(--navy);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
+    .gate-card {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 450px;
+      border-radius: 24px;
+      padding: 24px 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      text-align: right;
     }
 
-    /* Sections */
-    .view-section {
-      display: none;
-      animation: fadeIn 0.25s ease;
-    }
-
-    .view-section.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Hero / Squad Banner */
-    .squad-card {
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      margin-bottom: 22px;
-    }
-
-    .squad-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 14px;
-    }
-
-    @media (max-width: 820px) {
-      .squad-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .char-box {
-      border-radius: var(--radius-md);
-      padding: 16px;
-      border: 1px solid var(--border);
-      background: #FAFBFD;
-    }
-
-    .char-head {
+    .gate-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 28px;
+      font-weight: 900;
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
+      justify-content: center;
+      margin: 0 auto 12px;
     }
 
-    .char-avatar {
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
+    .gate-title {
+      text-align: center;
+      margin: 0 0 6px;
+      color: var(--navy);
       font-size: 22px;
       font-weight: 800;
     }
 
-    /* Filter Chips */
-    .filter-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 18px;
+    .gate-sub {
+      text-align: center;
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
     }
 
-    .chip {
-      background: var(--card);
-      border: 1.5px solid var(--border);
-      color: var(--text);
-      padding: 8px 15px;
-      border-radius: 999px;
-      font-family: inherit;
-      font-size: 13.5px;
+    .promo-banner {
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #065F46;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 12px;
       font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s ease;
+      margin-bottom: 14px;
     }
 
-    .chip.active {
-      background: var(--amber);
-      border-color: var(--amber);
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
       color: var(--navy);
     }
 
-    /* Episodes Grid */
-    .episodes-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-      gap: 18px;
+    .input-box, .select-box {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      margin-bottom: 12px;
+      background: #F8FAFC;
     }
 
-    .ep-card {
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    .primary-btn {
+      width: 100%;
+      background: var(--navy);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 14px;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
     }
 
-    .ep-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow);
+    .gate-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
     }
 
-    .ep-banner {
-      height: 148px;
+    .error-msg {
+      color: var(--danger);
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .renewal-box {
+      background: #FFFBEB;
+      border: 1.5px solid #F59E0B;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #78350F;
+    }
+
+    .app-shell {
+      display: none;
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      color: #FFFFFF;
       padding: 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      color: #fff;
-      position: relative;
+      border-bottom-left-radius: 22px;
+      border-bottom-right-radius: 22px;
+      box-shadow: 0 8px 24px rgba(15, 41, 66, 0.18);
     }
 
-    .badge-tag {
-      align-self: flex-start;
-      background: rgba(15, 41, 66, 0.55);
-      backdrop-filter: blur(6px);
-      padding: 4px 11px;
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .brand-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mini-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--amber);
+      color: var(--navy);
+      font-weight: 900;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-info h1 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .brand-info p {
+      margin: 0;
+      font-size: 11px;
+      color: #CBD5E1;
+    }
+
+    .hud-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .hud-pill {
+      background: rgba(255, 255, 255, 0.14);
+      color: #FFFFFF;
+      border: none;
       border-radius: 999px;
+      padding: 6px 12px;
       font-size: 12px;
       font-weight: 700;
     }
 
-    .ep-body {
+    .hud-btn {
+      background: #FFFFFF;
+      color: var(--navy);
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .creator-strip {
+      background: #EEF2FF;
+      border: 1px solid #C7D2FE;
+      color: var(--navy);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .search-bar-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: #FFFFFF;
+      font-size: 14px;
+    }
+
+    .cats-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .cat-chip {
+      border: 1px solid var(--border);
+      background: #FFFFFF;
+      color: var(--navy);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .cat-chip.active {
+      background: var(--navy);
+      color: #FFFFFF;
+      border-color: var(--navy);
+    }
+
+    .tabs-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .nav-tab {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 6px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--navy);
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .nav-tab.active {
+      background: var(--amber);
+      color: var(--navy);
+      border-color: var(--amber-dark);
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .video-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+      cursor: pointer;
+    }
+
+    .thumb-box {
+      height: 148px;
+      background: linear-gradient(135deg, #1E3A5F, #0D9488);
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .play-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .duration-tag {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(15, 23, 42, 0.82);
+      color: #FFFFFF;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .video-meta {
+      padding: 12px 14px;
+    }
+
+    .video-cat {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--teal);
+      margin-bottom: 4px;
+    }
+
+    .video-title {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .video-desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .panel-box {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      z-index: 9999;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 560px;
+      max-height: 88vh;
+      overflow-y: auto;
+      border-radius: 20px;
       padding: 18px;
     }
 
-    .ep-title {
-      margin: 0 0 8px;
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--navy);
-    }
-
-    .ep-desc {
-      margin: 0 0 14px;
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .ep-meta {
+    .modal-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12.5px;
-      color: var(--muted);
-      margin-bottom: 14px;
-      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
     }
 
-    .btn-primary {
-      width: 100%;
-      background: linear-gradient(135deg, var(--amber), var(--amber-dark));
-      color: var(--navy);
+    .close-modal {
       border: none;
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      font-family: inherit;
-      font-size: 14.5px;
+      background: #E2E8F0;
+      color: var(--navy);
+      border-radius: 8px;
+      padding: 6px 12px;
       font-weight: 800;
       cursor: pointer;
-      transition: filter 0.15s ease;
     }
 
-    .btn-primary:hover {
-      filter: brightness(1.04);
-    }
-
-    .btn-secondary {
-      background: var(--bg);
-      color: var(--navy);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-family: inherit;
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    /* Theater / Interactive Episode Player */
-    .theater-box {
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
-    }
-
-    .stage-canvas {
-      background: linear-gradient(180deg, #E0F2FE 0%, #BAE6FD 62%, #7DD3FC 62%, #0284C7 100%);
-      border-radius: var(--radius-md);
-      padding: 24px 18px;
-      min-height: 260px;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      border: 2px solid #93C5FD;
-    }
-
-    .scene-bubble {
-      background: rgba(255, 255, 255, 0.94);
-      color: var(--navy);
-      border-radius: 18px;
-      padding: 14px 18px;
-      max-width: 740px;
-      box-shadow: var(--shadow-sm);
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .scene-visual-row {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 16px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-
-    .animated-item {
-      font-size: 46px;
-      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-      user-select: none;
-    }
-
-    .sinking {
-      transform: translateY(42px) rotate(18deg) scale(0.92);
-    }
-
-    .floating-bob {
-      animation: bob 2.4s ease-in-out infinite;
-    }
-
-    @keyframes bob {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-8px); }
-    }
-
-    /* Lab Simulator */
-    .lab-grid {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 860px) {
-      .lab-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .water-tank {
-      background: linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 34%, #0EA5E9 35%, #0369A1 100%);
-      border-radius: var(--radius-md);
-      height: 270px;
-      position: relative;
-      border: 2px solid #7DD3FC;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .lab-object {
-      position: absolute;
-      top: 48px;
-      font-size: 48px;
-      transition: top 0.85s cubic-bezier(0.34, 1.4, 0.64, 1), transform 0.5s ease;
-    }
-
-    .lab-object.sink-pos {
-      top: 192px;
-      transform: scale(0.95) rotate(12deg);
-    }
-
-    .lab-object.float-pos {
-      top: 76px;
-      animation: bob 2.2s ease-in-out infinite;
-    }
-
-    .control-group {
-      margin-bottom: 16px;
-    }
-
-    .control-group label {
-      display: block;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: var(--navy);
-      font-size: 14px;
-    }
-
-    .option-pills {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .opt-pill {
-      padding: 8px 14px;
-      border-radius: 12px;
-      border: 1.5px solid var(--border);
-      background: #fff;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: 13.5px;
-      cursor: pointer;
-    }
-
-    .opt-pill.selected {
-      background: var(--teal);
-      color: #fff;
-      border-color: var(--teal);
-    }
-
-    /* Quiz & Badges */
-    .quiz-option {
-      display: block;
+    .player-frame {
       width: 100%;
-      text-align: right;
-      background: #FAFBFD;
-      border: 1.5px solid var(--border);
+      aspect-ratio: 16 / 9;
+      border: none;
       border-radius: 14px;
-      padding: 13px 16px;
-      margin-bottom: 10px;
-      font-family: inherit;
-      font-size: 14.5px;
+      background: #0F172A;
+      margin-bottom: 12px;
+    }
+
+    .small-btn {
+      background: var(--navy);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s ease;
     }
 
-    .quiz-option:hover {
-      border-color: var(--amber);
-      background: #FFFBEB;
-    }
-
-    .quiz-option.correct {
-      background: #DCFCE7;
-      border-color: #16A34A;
-      color: #14532D;
-    }
-
-    .quiz-option.wrong {
-      background: #FEE2E2;
-      border-color: #DC2626;
-      color: #7F1D1D;
-    }
-
-    .badges-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
-
-    .badge-item {
-      border-radius: 16px;
-      padding: 16px;
+    .footer-bar {
       text-align: center;
-      border: 1.5px solid var(--border);
-      background: #FAFBFD;
-    }
-
-    .badge-item.unlocked {
-      background: #FFFBEB;
-      border-color: #F59E0B;
-    }
-
-    /* Modal for Parent Mode */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 41, 66, 0.55);
-      backdrop-filter: blur(4px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 100;
-    }
-
-    .modal-backdrop.open {
-      display: flex;
-    }
-
-    .modal-card {
-      background: #fff;
-      border-radius: var(--radius-lg);
-      max-width: 540px;
-      width: 100%;
-      padding: 24px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .input-field {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1.5px solid var(--border);
-      font-family: inherit;
-      font-size: 14.5px;
-      margin-top: 6px;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(90px);
-      background: var(--navy);
-      color: #fff;
-      padding: 11px 20px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 700;
-      z-index: 200;
-      opacity: 0;
-      transition: all 0.25s ease;
-      box-shadow: var(--shadow);
-    }
-
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 18px 12px 28px;
     }
   </style>
 </head>
 <body>
 
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand">
-        <div class="brand-logo">ش</div>
-        <div>
-          <h1 class="brand-title">شَغَف</h1>
-          <p class="brand-sub">تجارب • اختراعات • تاريخنا المشرق — بلا إعلانات</p>
-        </div>
+  <!-- 1. بوابة الاشتراك والتجديد بعد السنة -->
+  <section class="gate-screen" id="subscriptionGate">
+    <div class="gate-card">
+      <div class="gate-logo">ش</div>
+      <h2 class="gate-title">منصة «شَغَف» للأطفال</h2>
+      <p class="gate-sub">إعداد وإشراف: <strong>ابو الطيب معوضه</strong><br>مقاطع تعليمية هادفة ومحفّزة، فكاهية بريئة، أناشيد، قرآن كريم، وبرامج مفيدة</p>
+
+      <div class="promo-banner" id="yearlyFeeBanner">
+        🎁 السنة الأولى متاحة للتفعيل، وبعد مرور سنة كاملة (365 يوماً) يتم تطبيق رسم اشتراك رمزي: <strong id="symbolicFeeLabel">500 ريال سنوياً (رسم رمزي)</strong>.
       </div>
 
-      <div class="header-stats">
-        <div class="stat-pill" title="نجوم الاستكشاف">⭐ <span id="starsCount">0</span> نجمة</div>
-        <div class="stat-pill" title="الوقت المتبقي اليوم">⏳ <span id="timerDisplay">45:00</span></div>
-        <button class="parent-btn" id="openParentBtn">🔒 لوحة الأهل</button>
+      <div id="renewalNoticeBox" class="renewal-box" style="display:none;">
+        <strong>⏳ انتهت فترة السنة أو تم تفعيل الرسوم الرمزية:</strong>
+        <p style="margin:4px 0 0;">للاستمرار في المشاهدة عبر الإنترنت، يرجى سداد الرسم الرمزي (<strong id="renewalFeeAmount"></strong>) ثم إدخال رمز التجديد المعتمد.</p>
       </div>
+
+      <div class="error-msg" id="gateError"></div>
+
+      <label class="field-label" for="subName">اسم المشترك أو ولي الأمر</label>
+      <input type="text" id="subName" class="input-box" placeholder="أدخل الاسم الكامل" />
+
+      <label class="field-label" for="subPhone">رقم الهاتف أو البريد للتواصل</label>
+      <input type="text" id="subPhone" class="input-box" placeholder="مثال: 77xxxxxxx" />
+
+      <label class="field-label" for="subPlan">باقة الاشتراك</label>
+      <select id="subPlan" class="select-box">
+        <option value="سنوي">اشتراك سنوي (365 يوماً ثم رسم رمزي)</option>
+        <option value="شهري">اشتراك شهري</option>
+      </select>
+
+      <label class="field-label" for="subCode">رمز التفعيل / التجديد (الافتراضي: SHAGHAF2026)</label>
+      <input type="text" id="subCode" class="input-box" placeholder="أدخل رمز التفعيل الممنوح من الإدارة" />
+
+      <button type="button" class="primary-btn" id="activateSubBtn">تفعيل الاشتراك والدخول عبر الإنترنت</button>
+      <p class="gate-note">🛡️ خالٍ تماماً من الإعلانات والألعاب المسيئة والمضرة والمحتوى الخليع والاحتيالي.</p>
     </div>
-  </header>
+  </section>
 
-  <main class="container">
-    <div class="safe-strip">
-      <span>🛡️ <strong>بيئة آمنة 100%:</strong> لا توجد إعلانات خارجية أو روابط عشوائية أو خوارزميات مشتتة.</span>
-      <span id="offlineStatus">💾 الحفظ التلقائي للتقدم مفعّل</span>
-    </div>
-
-    <nav class="nav-tabs" aria-label="أقسام التطبيق">
-      <button class="tab-btn active" data-tab="episodes">🎬 الحلقات والمغامرات</button>
-      <button class="tab-btn" data-tab="lab">🧪 مختبر الطفو والعلوم</button>
-      <button class="tab-btn" data-tab="quiz">🏆 تحدي النجوم والأوسمة</button>
-      <button class="tab-btn" data-tab="guide">🧭 هوية «شغف» وحفظ التطبيق</button>
-    </nav>
-
-    <!-- TAB 1: EPISODES -->
-    <section id="tab-episodes" class="view-section active">
-      <div class="squad-card">
-        <h2 style="margin:0 0 4px; font-size:19px; color:var(--navy);">فريق «شغف» يرحب بك!</h2>
-        <p style="margin:0; color:var(--muted); font-size:14px;">اختر مغامرة أو تجربة لتبدأ رحلة الاستكشاف مع أصدقائك:</p>
-        <div class="squad-grid">
-          <div class="char-box">
-            <div class="char-head">
-              <div class="char-avatar" style="background:#FEF3C7;">🧭</div>
-              <div>
-                <strong>زين (10 سنوات)</strong>
-                <div style="font-size:12px; color:var(--muted);">الفضولي المغامر</div>
-              </div>
-            </div>
-            <p style="margin:0; font-size:13px; color:var(--muted);">يسأل «لماذا؟» و«ماذا لو؟» ويحب التجربة العملية.</p>
-          </div>
-
-          <div class="char-box">
-            <div class="char-head">
-              <div class="char-avatar" style="background:#CCFBF1;">🔬</div>
-              <div>
-                <strong>رؤى (12 سنة)</strong>
-                <div style="font-size:12px; color:var(--muted);">المبتكرة الهادئة</div>
-              </div>
-            </div>
-            <p style="margin:0; font-size:13px; color:var(--muted);">تربط العلم بالحياة وتشرح الأفكار بوضوح وابتسامة.</p>
-          </div>
-
-          <div class="char-box">
-            <div class="char-head">
-              <div class="char-avatar" style="background:#EDE9FE;">✨</div>
-              <div>
-                <strong>ومضة</strong>
-                <div style="font-size:12px; color:var(--muted);">الرفيق الذكي</div>
-              </div>
-            </div>
-            <p style="margin:0; font-size:13px; color:var(--muted);">يضيف مرحاً وخفة ظل ويفتح بوابات المعرفة.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Episode Theater -->
-      <div id="theaterPanel" class="theater-box" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-          <h3 id="theaterTitle" style="margin:0; font-size:19px; color:var(--navy);"></h3>
-          <button class="btn-secondary" id="closeTheaterBtn">إغلاق المسرح ✕</button>
-        </div>
-
-        <div class="stage-canvas">
-          <div id="sceneBubble" class="scene-bubble"></div>
-          <div class="scene-visual-row">
-            <div style="display:flex; gap:10px; align-items:center; background:rgba(255,255,255,0.85); padding:8px 14px; border-radius:14px; font-weight:700; font-size:13.5px;">
-              <span>المشهد <span id="sceneIndexText">1</span> من <span id="sceneTotalText">4</span></span>
-            </div>
-            <div id="stageProp" class="animated-item">🪨</div>
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
-          <button class="btn-secondary" id="prevSceneBtn">→ المشهد السابق</button>
-          <button class="btn-primary" style="width:auto; min-width:190px;" id="nextSceneBtn">المشهد التالي ←</button>
-        </div>
-      </div>
-
-      <div class="filter-row" id="categoryFilters">
-        <button class="chip active" data-cat="all">الكل</button>
-        <button class="chip" data-cat="مختبر شغف">🧪 مختبر شغف</button>
-        <button class="chip" data-cat="حكايات من نور">📜 حكايات من نور</button>
-        <button class="chip" data-cat="ورشة المستقبل">🚀 ورشة المستقبل</button>
-      </div>
-
-      <div class="episodes-grid" id="episodesGrid"></div>
-    </section>
-
-    <!-- TAB 2: INTERACTIVE SCIENCE LAB -->
-    <section id="tab-lab" class="view-section">
-      <div class="squad-card">
-        <h2 style="margin:0 0 6px; font-size:20px; color:var(--navy);">🧪 مختبر شغف التفاعلي: لماذا لا يغرق القارب الثقيل؟</h2>
-        <p style="margin:0 0 18px; color:var(--muted); font-size:14px;">
-          جرّب بنفسك كما فعل <strong>زين</strong> و<strong>رؤى</strong>! غيّر <strong>الشكل</strong> و<strong>الكتلة/الحجم</strong> وراقب هل يطفو الجسم أم يغرق، واكسب نجوماً عند اكتشاف السبب العلمي.
-        </p>
-
-        <div class="lab-grid">
+  <!-- 2. واجهة التطبيق بعد التفعيل -->
+  <div class="app-shell" id="mainAppShell">
+    <header class="app-header">
+      <div class="header-top">
+        <div class="brand-info">
+          <div class="mini-logo">ش</div>
           <div>
-            <div class="water-tank">
-              <div id="labItem" class="lab-object">🪨</div>
-              <div style="position:absolute; bottom:10px; right:14px; color:#E0F2FE; font-size:13px; font-weight:700;">
-                حوض الماء — راقب مستوى الإزاحة والطفو
-              </div>
-            </div>
-            <div id="labResultBox" style="margin-top:14px; padding:14px 16px; border-radius:14px; background:#F0F9FF; border:1px solid #BAE6FD; font-weight:700; color:var(--navy); font-size:14px;">
-              اختر الجسم وشكله ثم اضغط «جرّب في الماء».
-            </div>
-          </div>
-
-          <div>
-            <div class="control-group">
-              <label>1. اختر المادة / الجسم:</label>
-              <div class="option-pills" id="labMaterialGroup">
-                <button class="opt-pill selected" data-mat="rock" data-icon="🪨" data-density="high">صخرة صغيرة</button>
-                <button class="opt-pill" data-mat="clay" data-icon="🟠" data-density="medium">معجون / طين</button>
-                <button class="opt-pill" data-mat="wood" data-icon="🪵" data-density="low">قطعة خشب</button>
-              </div>
-            </div>
-
-            <div class="control-group">
-              <label>2. اختر الشكل الهندسي:</label>
-              <div class="option-pills" id="labShapeGroup">
-                <button class="opt-pill selected" data-shape="compact">مكعب/كرة مضغوطة</button>
-                <button class="opt-pill" data-shape="boat">شكل قارب مجوّف واسع</button>
-              </div>
-            </div>
-
-            <div class="control-group">
-              <label>3. سعة إزاحة الماء (حجم الشكل): <span id="volLabel">متوسطة</span></label>
-              <input type="range" id="volRange" min="1" max="3" value="2" style="width:100%;" />
-            </div>
-
-            <button class="btn-primary" id="runLabBtn">💧 جرّب في الماء الآن</button>
+            <h1>شَغَف • محتوى الأطفال النافع</h1>
+            <p>قرآن • أناشيد • تعليم وتحفيز • فكاهة بريئة • برامج مفيدة</p>
           </div>
         </div>
+        <button type="button" class="hud-pill hud-btn" id="openAdminBtn">🔒 لوحة الإدارة والأهل</button>
       </div>
-    </section>
 
-    <!-- TAB 3: QUIZ & BADGES -->
-    <section id="tab-quiz" class="view-section">
-      <div class="squad-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div>
-            <h2 style="margin:0 0 4px; font-size:20px; color:var(--navy);">🏆 تحدي العباقرة الصغار</h2>
-            <p style="margin:0; color:var(--muted); font-size:14px;">أجب عن الأسئلة لتجمع النجوم وتفتح أوسمة «شغف».</p>
-          </div>
-          <div class="stat-pill" style="background:#FEF3C7; color:var(--navy); border-color:#F59E0B;">
-            السؤال <span id="quizNum">1</span> من <span id="quizTotal">3</span>
-          </div>
+      <div class="hud-row">
+        <span class="hud-pill" id="subscriberBadge">👤 مشترك نشط</span>
+        <span class="hud-pill" id="yearDaysPill">📅 متبقي: 365 يوم</span>
+        <span class="hud-pill" id="starsPill">⭐ 20 نجمة</span>
+        <span class="hud-pill" id="timerPill">⏳ 40:00</span>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="creator-strip">
+        إعداد وإشراف: <strong>ابو الطيب معوضه</strong> — بلا إعلانات أو ألعاب مضرة أو محتوى مسيء 🛡️
+      </div>
+
+      <div class="search-bar-wrap">
+        <input type="text" id="safeSearchInput" class="search-input" placeholder="ابحث في القرآن، الأناشيد، المقاطع التعليمية، الفكاهية، أو البرامج المفيدة..." />
+      </div>
+      <div class="error-msg" id="searchBlockAlert"></div>
+
+      <div class="tabs-bar">
+        <button type="button" class="nav-tab active" data-view="videos">🎬 المقاطع والحلقات</button>
+        <button type="button" class="nav-tab" data-view="lab">🧪 مختبر العلوم</button>
+        <button type="button" class="nav-tab" data-view="badges">🏆 النجوم والأوسمة</button>
+        <button type="button" class="nav-tab" data-view="account">🪪 اشتراكي والهوية</button>
+      </div>
+
+      <section id="view-videos">
+        <div class="cats-row" id="categoryChips">
+          <button type="button" class="cat-chip active" data-cat="الكل">الكل</button>
+          <button type="button" class="cat-chip" data-cat="القرآن الكريم">القرآن الكريم</button>
+          <button type="button" class="cat-chip" data-cat="الأناشيد">الأناشيد</button>
+          <button type="button" class="cat-chip" data-cat="تعليمي وهادف ومحفّز">تعليمي وهادف ومحفّز</button>
+          <button type="button" class="cat-chip" data-cat="مضحك وفكاهي للأطفال">مضحك وفكاهي للأطفال</button>
+          <button type="button" class="cat-chip" data-cat="برامج وحلقات مفيدة">برامج وحلقات مفيدة</button>
         </div>
+        <div class="video-grid" id="videoGrid"></div>
+      </section>
 
-        <div id="quizContainer" style="margin-top:18px;">
-          <h3 id="quizQuestion" style="margin:0 0 14px; font-size:17px; color:var(--navy);"></h3>
-          <div id="quizOptions"></div>
-          <div id="quizFeedback" style="margin-top:10px; font-weight:700; font-size:14px;"></div>
-          <div style="margin-top:14px;">
-            <button class="btn-secondary" id="nextQuizBtn">السؤال التالي ←</button>
-          </div>
+      <section id="view-lab" style="display:none;">
+        <div class="panel-box">
+          <h3>🧪 مختبر الطفو والعلوم التفاعلي</h3>
+          <p><strong>1. قاعدة الطفو:</strong> تطفو السفينة الضخمة لأن شكلها المجوف يزيح كمية كبيرة من الماء تجعل متوسط كثافتها أقل من الماء.</p>
+          <button type="button" class="small-btn" onclick="window.__awardStars(5, 'lab1')">أتممت التجربة (+5 نجوم)</button>
         </div>
-      </div>
-
-      <div class="squad-card">
-        <h3 style="margin:0 0 4px; font-size:18px; color:var(--navy);">🎖️ أوسمة «شغف»</h3>
-        <p style="margin:0; color:var(--muted); font-size:13.5px;">تُفتح الأوسمة تلقائياً كلما زادت نجومك وأكملت التجارب.</p>
-        <div class="badges-row" id="badgesGrid"></div>
-      </div>
-    </section>
-
-    <!-- TAB 4: BRAND & DOWNLOAD / SAVE GUIDE -->
-    <section id="tab-guide" class="view-section">
-      <div class="squad-card">
-        <h2 style="margin:0 0 8px; font-size:20px; color:var(--navy);">🧭 عن تطبيق «شَغَف» وكيفية حفظه وتشغيله</h2>
-        <p style="margin:0 0 14px; color:var(--muted); font-size:14px;">
-          هذا التطبيق مصمم ليكون نواة تفاعلية متكاملة لمنصة <strong>«شَغَف»</strong>: يجمع بين الحكاية والتجربة والاختبار والرقابة الأبوية في بيئة عربية هادئة وآمنة.
-        </p>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-top:14px;">
-          <div class="char-box">
-            <h4 style="margin:0 0 6px; color:var(--navy);">📱 تثبيته على الهاتف كأيقونة تطبيق</h4>
-            <p style="margin:0; font-size:13.5px; color:var(--muted);">
-              عند فتح الملف على متصفح الهاتف (Chrome أو Safari)، يمكنك اختيار <strong>«إضافة إلى الشاشة الرئيسية» (Add to Home Screen)</strong> ليظهر كأيقونة تطبيق مستقلة بملء الشاشة.
-            </p>
-          </div>
-
-          <div class="char-box">
-            <h4 style="margin:0 0 6px; color:var(--navy);">🔒 رقابة أبوية حقيقية</h4>
-            <p style="margin:0; font-size:13.5px; color:var(--muted);">
-              من زر <strong>«لوحة الأهل»</strong> بالأعلى يمكن تحديد مدة المشاهدة اليومية بالدقائق وإعادة ضبط المؤقت أو التقدم في أي وقت.
-            </p>
-          </div>
-
-          <div class="char-box">
-            <h4 style="margin:0 0 6px; color:var(--navy);">🚀 خطوتك التالية للتوسع</h4>
-            <p style="margin:0; font-size:13.5px; color:var(--muted);">
-              يمكن ربط هذه الواجهة لاحقاً بمكتبة حلقات رسوم متحركة حقيقية، قاعدة بيانات، وتطبيق أندرويد/iOS عبر Flutter أو React Native.
-            </p>
-          </div>
+        <div class="panel-box">
+          <h3>🔭 سؤال العباقرة</h3>
+          <p>من العالم المسلم الذي وضع أسس علم البصريات وشرح آلية الإبصار؟</p>
+          <button type="button" class="small-btn" onclick="window.__awardStars(5, 'quiz-haytham')">الحسن بن الهيثم (+5 نجوم)</button>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
 
-  <!-- Parent Control Modal -->
-  <div class="modal-backdrop" id="parentModal" role="dialog" aria-modal="true" aria-labelledby="parentModalTitle">
-    <div class="modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-        <h3 id="parentModalTitle" style="margin:0; color:var(--navy);">🔒 لوحة تحكم الوالدين — شَغَف</h3>
-        <button class="btn-secondary" id="closeParentBtn">✕</button>
-      </div>
-
-      <div id="parentLockView">
-        <p style="font-size:14px; color:var(--muted); margin-top:0;">
-          للدخول إلى إعدادات الأهل، أجب عن السؤال الحسابي السريع:
-        </p>
-        <label style="font-weight:800; color:var(--navy);">كم ناتج: 7 + 8 ؟</label>
-        <input type="number" id="parentAnswerInput" class="input-field" placeholder="اكتب الرقم هنا..." />
-        <div style="margin-top:14px; display:flex; gap:10px;">
-          <button class="btn-primary" id="unlockParentBtn">دخول لوحة الأهل</button>
+      <section id="view-badges" style="display:none;">
+        <div class="panel-box">
+          <h3>🏆 رصيد النجوم والأوسمة</h3>
+          <p id="badgesSummaryText">رصيدك الحالي: 20 نجمة.</p>
+          <p>🎖️ <strong>وسام المستكشف المنضبط:</strong> يُمنح للمشتركين الذين يكملون الحلقات والأناشيد والأنشطة النافعة.</p>
         </div>
-      </div>
+      </section>
 
-      <div id="parentSettingsView" style="display:none;">
-        <p style="font-size:14px; color:var(--muted); margin-top:0;">
-          تحكم بمدة الاستخدام اليومي الآمن لطفلك:
-        </p>
-        <label style="font-weight:800; color:var(--navy);">المدة اليومية المسموحة (بالدقائق):</label>
-        <input type="number" id="dailyLimitInput" class="input-field" min="5" max="180" value="45" />
-
-        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn-primary" style="flex:1;" id="saveParentSettingsBtn">حفظ وتجديد الوقت اليومي</button>
-          <button class="btn-secondary" id="resetProgressBtn">تصفير النجوم والتقدم</button>
+      <section id="view-account" style="display:none;">
+        <div class="panel-box">
+          <h3>🪪 بيانات الاشتراك والملكية</h3>
+          <p><strong>المشرف ومالك الفكرة:</strong> ابو الطيب معوضه</p>
+          <p id="accountDetailsText"></p>
+          <p style="font-size:13px;color:#475569;">🛡️ الحماية الشاملة: منع الإعلانات المنبثقة والألعاب المسيئة والمضرة، وحظر المحتوى الخليع والكرتون الإباحي والاحتيال.</p>
         </div>
+      </section>
+    </main>
+
+    <footer class="footer-bar">
+      منصة «شَغَف» للأطفال — إعداد: <strong>ابو الطيب معوضه</strong>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="universalModal">
+    <div class="modal-dialog">
+      <div class="modal-top">
+        <strong id="uModalTitle">العنوان</strong>
+        <button type="button" class="close-modal" id="closeUModal">إغلاق</button>
       </div>
+      <div id="uModalBody"></div>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script>
-    const STORAGE_KEY = "shaghaf_app_state_v1";
+    (function () {
+      const STORAGE_KEY = "shaghaf_kids_shielded_v6";
+      const CREATOR_NAME = "ابو الطيب معوضه";
+      const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+      const ONLINE_DB_BASE_URL = "";
 
-    const defaultState = {
-      stars: 10,
-      remainingSeconds: 45 * 60,
-      dailyLimitMinutes: 45,
-      completedEpisodes: [],
-      unlockedBadges: ["explorer"]
-    };
+      const ALLOWED_CATEGORIES = [
+        "القرآن الكريم",
+        "الأناشيد",
+        "تعليمي وهادف ومحفّز",
+        "مضحك وفكاهي للأطفال",
+        "برامج وحلقات مفيدة"
+      ];
 
-    let state = loadState();
-    let activeCategory = "all";
-    let currentEpisode = null;
-    let currentSceneIdx = 0;
-    let quizIdx = 0;
-
-    const episodes = [
-      {
-        id: "buoyancy-boat",
-        category: "مختبر شغف",
-        age: "8 - 12 سنة",
-        duration: "5 دقائق",
-        starsReward: 15,
-        gradient: "linear-gradient(135deg, #0284C7, #0D9488)",
-        emoji: "⛵",
-        title: "لماذا لا يغرق القارب الثقيل؟",
-        desc: "ينطلق زين ورؤى في تجربة عملية لمعرفة سر طفو السفن الضخمة مقارنة بحجر صغير يغرق.",
-        scenes: [
-          {
-            text: "زين: «رميتُ حجراً صغيراً في الماء فغرق فوراً! كيف تطفو سفينة ضخمة تحمل آلاف الأطنان؟»",
-            prop: "🪨",
-            mode: "sink"
-          },
-          {
-            text: "رؤى: «السر ليس في الوزن وحده يا زين، بل في مقدار الماء الذي يزيحه شكل الجسم!»",
-            prop: "🟠",
-            mode: "sink"
-          },
-          {
-            text: "ومضة: «انظروا! عندما فردناها على شكل قارب واسع أزاحت ماءً أكثر فطفت بسلام!»",
-            prop: "⛵",
-            mode: "float"
-          },
-          {
-            text: "رؤى: «هكذا صمم المهندسون والبحارة السفن بهياكل مجوفة واسعة؛ والآن جرّب بنفسك في مختبر شغف!»",
-            prop: "🔬",
-            mode: "float"
-          }
-        ]
-      },
-      {
-        id: "ibn-al-haytham-light",
-        category: "حكايات من نور",
-        age: "9 - 14 سنة",
-        duration: "6 دقائق",
-        starsReward: 20,
-        gradient: "linear-gradient(135deg, #D97706, #9333EA)",
-        emoji: "🔦",
-        title: "الحسن بن الهيثم وسرّ الضوء والظل",
-        desc: "رحلة مشوقة إلى بيت العلم لاكتشاف كيف نرى الأشياء وكيف يسير الضوء في خطوط مستقيمة.",
-        scenes: [
-          {
-            text: "زين: «لماذا يظهر ظلنا طويلاً وقت الغروب وقصيراً وقت الظهيرة؟»",
-            prop: "☀️",
-            mode: "float"
-          },
-          {
-            text: "رؤى: «لأن الضوء يسير في خطوط مستقيمة؛ والعالم العربي الحسن بن الهيثم أثبت ذلك بالتجربة!»",
-            prop: "🔦",
-            mode: "float"
-          },
-          {
-            text: "ومضة: «بفضل القمرة المظلمة والتجارب الدقيقة، فُتح باب علم البصريات الحديث!»",
-            prop: "✨",
-            mode: "float"
-          }
-        ]
-      },
-      {
-        id: "al-jazari-smart-machine",
-        category: "ورشة المستقبل",
-        age: "10 - 14 سنة",
-        duration: "6 دقائق",
-        starsReward: 20,
-        gradient: "linear-gradient(135deg, #0F2942, #2563EB)",
-        emoji: "⚙️",
-        title: "بديع الزمان الجزري وبدايات الآلات الذكية",
-        desc: "كيف ابتكر الجزري آلات دقيقة تعمل بالماء والتروس والاتزان قبل قرون طويلة؟",
-        scenes: [
-          {
-            text: "زين: «هل كانت هناك آلات ذاتية الحركة قبل عصر الكهرباء والروبوتات؟»",
-            prop: "⚙️",
-            mode: "float"
-          },
-          {
-            text: "رؤى: «نعم! بديع الزمان الجزري صمم ساعات مائية وآلات بدقة هندسية مذهلة.»",
-            prop: "🕰️",
-            mode: "float"
-          },
-          {
-            text: "ومضة: «التفكير الهندسي والابتكار هما جسر المستقبل؛ هيا نختبر ذكاءنا!»",
-            prop: "🚀",
-            mode: "float"
-          }
-        ]
-      }
-    ];
-
-    const quizQuestions = [
-      {
-        q: "لماذا يطفو القارب المصنوع من معدن أو ورق مقوى بينما تغرق كرة صغيرة مضغوطة من نفس المادة؟",
-        options: [
-          "لأن شكل القارب الواسع يزيح كمية أكبر من الماء فتزيد قوة الطفو",
-          "لأن الماء يصبح أثقل في أيام الصيف فقط",
-          "لأن القارب لا يلمس الماء أبداً"
-        ],
-        correct: 0,
-        explain: "أحسنت! كلما زاد حجم الماء المزاح بشكل مناسب، زادت قدرة الجسم على الطفو."
-      },
-      {
-        q: "من العالم الذي أسهم إسهاماً كبيراً في علم البصريات وشرح كيفية انتشار الضوء؟",
-        options: [
-          "الحسن بن الهيثم",
-          "أرخميدس فقط",
-          "لا أحد قبل القرن العشرين"
-        ],
-        correct: 0,
-        explain: "ممتاز! الحسن بن الهيثم يُعد من أبرز مؤسسي علم البصريات والمنهج التجريبي."
-      },
-      {
-        q: "ما الفائدة الأساسية من وجود «لوحة تحكم الأهل» في تطبيق شغف؟",
-        options: [
-          "تنظيم وقت المشاهدة اليومي وتوفير بيئة آمنة بلا إعلانات عشوائية",
-          "إضافة إعلانات منبثقة أثناء اللعب",
-          "حذف جميع التجارب العلمية"
-        ],
-        correct: 0,
-        explain: "رائع! التوازن بين المتعة والوقت الآمن هو جوهر «شغف»."
-      }
-    ];
-
-    const badges = [
-      { id: "explorer", name: "مكتشف شغف", icon: "🧭", reqStars: 0 },
-      { id: "scientist", name: "عالم التجارب", icon: "🧪", reqStars: 25 },
-      { id: "historian", name: "حارس الحكايات", icon: "📜", reqStars: 40 },
-      { id: "genius", name: "نجم الابتكار", icon: "🌟", reqStars: 60 }
-    ];
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return { ...defaultState };
-        return { ...defaultState, ...JSON.parse(raw) };
-      } catch {
-        return { ...defaultState };
-      }
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch {}
-    }
-
-    function showToast(msg) {
-      const el = document.getElementById("toast");
-      el.textContent = msg;
-      el.classList.add("show");
-      setTimeout(() => el.classList.remove("show"), 2600);
-    }
-
-    function addStars(amount, reason) {
-      state.stars += amount;
-      badges.forEach(b => {
-        if (state.stars >= b.reqStars && !state.unlockedBadges.includes(b.id)) {
-          state.unlockedBadges.push(b.id);
-          showToast(`🎖️ مبروك! فتحت وسام «${b.name}»`);
-        }
-      });
-      saveState();
-      renderTopStats();
-      renderBadges();
-      if (reason) showToast(`⭐ +${amount} نجوم — ${reason}`);
-    }
-
-    function renderTopStats() {
-      document.getElementById("starsCount").textContent = state.stars;
-      const mins = Math.floor(state.remainingSeconds / 60);
-      const secs = state.remainingSeconds % 60;
-      document.getElementById("timerDisplay").textContent =
-        `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-    }
-
-    // Tabs switching
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".view-section").forEach(s => s.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
-      });
-    });
-
-    // Category chips
-    document.querySelectorAll("#categoryFilters .chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        document.querySelectorAll("#categoryFilters .chip").forEach(c => c.classList.remove("active"));
-        chip.classList.add("active");
-        activeCategory = chip.dataset.cat;
-        renderEpisodes();
-      });
-    });
-
-    function renderEpisodes() {
-      const grid = document.getElementById("episodesGrid");
-      const list = activeCategory === "all"
-        ? episodes
-        : episodes.filter(e => e.category === activeCategory);
-
-      grid.innerHTML = list.map(ep => {
-        const done = state.completedEpisodes.includes(ep.id);
-        return `
-          <article class="ep-card">
-            <div class="ep-banner" style="background:${ep.gradient};">
-              <span class="badge-tag">${ep.category} ${done ? "• مكتملة ✓" : ""}</span>
-              <div style="font-size:44px; text-align:left;">${ep.emoji}</div>
-            </div>
-            <div class="ep-body">
-              <h3 class="ep-title">${ep.title}</h3>
-              <p class="ep-desc">${ep.desc}</p>
-              <div class="ep-meta">
-                <span>🎯 ${ep.age}</span>
-                <span>⏱️ ${ep.duration}</span>
-                <span>⭐ +${ep.starsReward}</span>
-              </div>
-              <button class="btn-primary" onclick="openEpisode('${ep.id}')">
-                ${done ? "إعادة مشاهدة المغامرة ▶" : "ابدأ المغامرة التفاعلية ▶"}
-              </button>
-            </div>
-          </article>
-        `;
-      }).join("");
-    }
-
-    window.openEpisode = function(id) {
-      const ep = episodes.find(e => e.id === id);
-      if (!ep) return;
-      currentEpisode = ep;
-      currentSceneIdx = 0;
-      document.getElementById("theaterPanel").style.display = "block";
-      document.getElementById("theaterTitle").textContent = ep.title;
-      document.getElementById("sceneTotalText").textContent = ep.scenes.length;
-      renderScene();
-      document.getElementById("theaterPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
-    };
-
-    function renderScene() {
-      if (!currentEpisode) return;
-      const sc = currentEpisode.scenes[currentSceneIdx];
-      document.getElementById("sceneIndexText").textContent = currentSceneIdx + 1;
-      document.getElementById("sceneBubble").textContent = sc.text;
-
-      const prop = document.getElementById("stageProp");
-      prop.textContent = sc.prop;
-      prop.className = "animated-item";
-      void prop.offsetWidth;
-      if (sc.mode === "sink") {
-        prop.classList.add("sinking");
-      } else {
-        prop.classList.add("floating-bob");
-      }
-
-      const nextBtn = document.getElementById("nextSceneBtn");
-      nextBtn.textContent = currentSceneIdx === currentEpisode.scenes.length - 1
-        ? "إنهاء الحلقة وجمع النجوم ★"
-        : "المشهد التالي ←";
-    }
-
-    document.getElementById("prevSceneBtn").addEventListener("click", () => {
-      if (!currentEpisode || currentSceneIdx === 0) return;
-      currentSceneIdx--;
-      renderScene();
-    });
-
-    document.getElementById("nextSceneBtn").addEventListener("click", () => {
-      if (!currentEpisode) return;
-      if (currentSceneIdx < currentEpisode.scenes.length - 1) {
-        currentSceneIdx++;
-        renderScene();
-      } else {
-        if (!state.completedEpisodes.includes(currentEpisode.id)) {
-          state.completedEpisodes.push(currentEpisode.id);
-          addStars(currentEpisode.starsReward, `أتممت «${currentEpisode.title}»`);
-        } else {
-          showToast("أحسنت إعادة المغامرة!");
-        }
-        renderEpisodes();
-        document.getElementById("theaterPanel").style.display = "none";
-      }
-    });
-
-    document.getElementById("closeTheaterBtn").addEventListener("click", () => {
-      document.getElementById("theaterPanel").style.display = "none";
-    });
-
-    // Lab Simulator Logic
-    let selectedMat = { mat: "rock", icon: "🪨", density: "high" };
-    let selectedShape = "compact";
-    let labTried = false;
-
-    document.querySelectorAll("#labMaterialGroup .opt-pill").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#labMaterialGroup .opt-pill").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        selectedMat = { mat: btn.dataset.mat, icon: btn.dataset.icon, density: btn.dataset.density };
-        const obj = document.getElementById("labItem");
-        obj.textContent = selectedShape === "boat" ? "🛶" : selectedMat.icon;
-        obj.className = "lab-object";
-      });
-    });
-
-    document.querySelectorAll("#labShapeGroup .opt-pill").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#labShapeGroup .opt-pill").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        selectedShape = btn.dataset.shape;
-        const obj = document.getElementById("labItem");
-        obj.textContent = selectedShape === "boat" ? "🛶" : selectedMat.icon;
-        obj.className = "lab-object";
-      });
-    });
-
-    const volRange = document.getElementById("volRange");
-    const volLabels = { 1: "صغيرة", 2: "متوسطة", 3: "كبيرة" };
-    volRange.addEventListener("input", () => {
-      document.getElementById("volLabel").textContent = volLabels[volRange.value];
-    });
-
-    document.getElementById("runLabBtn").addEventListener("click", () => {
-      const obj = document.getElementById("labItem");
-      const resBox = document.getElementById("labResultBox");
-      const vol = Number(volRange.value);
-
-      obj.className = "lab-object";
-      void obj.offsetWidth;
-
-      let floats = false;
-      if (selectedMat.density === "low") {
-        floats = true;
-      } else if (selectedShape === "boat" && vol >= 2) {
-        floats = true;
-      } else if (selectedMat.density === "medium" && vol === 3) {
-        floats = true;
-      }
-
-      if (floats) {
-        obj.classList.add("float-pos");
-        resBox.style.background = "#ECFDF5";
-        resBox.style.borderColor = "#6EE7B7";
-        resBox.style.color = "#065F46";
-        resBox.textContent = "🌊 يطفو! الشكل والإزاحة سمحا للماء بدعم الجسم فبقي طافياً فوق السطح.";
-      } else {
-        obj.classList.add("sink-pos");
-        resBox.style.background = "#FEF2F2";
-        resBox.style.borderColor = "#FCA5A5";
-        resBox.style.color = "#991B1B";
-        resBox.textContent = "⬇️ يغرق! هنا وزن الجسم أكبر من قوة دفع الماء المزاح بهذا الشكل/الحجم.";
-      }
-
-      if (!labTried) {
-        labTried = true;
-        addStars(10, "تجربة علمية ناجحة في المختبر");
-      }
-    });
-
-    // Quiz Logic
-    function renderQuiz() {
-      const qObj = quizQuestions[quizIdx];
-      document.getElementById("quizNum").textContent = quizIdx + 1;
-      document.getElementById("quizTotal").textContent = quizQuestions.length;
-      document.getElementById("quizQuestion").textContent = qObj.q;
-      document.getElementById("quizFeedback").textContent = "";
-
-      const optsDiv = document.getElementById("quizOptions");
-      optsDiv.innerHTML = "";
-      qObj.options.forEach((opt, idx) => {
-        const b = document.createElement("button");
-        b.className = "quiz-option";
-        b.textContent = opt;
-        b.addEventListener("click", () => {
-          document.querySelectorAll(".quiz-option").forEach(el => (el.disabled = true));
-          const fb = document.getElementById("quizFeedback");
-          if (idx === qObj.correct) {
-            b.classList.add("correct");
-            fb.style.color = "#15803D";
-            fb.textContent = "✅ " + qObj.explain;
-            addStars(10, "إجابة ذكية في التحدي");
-          } else {
-            b.classList.add("wrong");
-            optsDiv.children[qObj.correct].classList.add("correct");
-            fb.style.color = "#B91C1C";
-            fb.textContent = "💡 " + qObj.explain;
-          }
-        });
-        optsDiv.appendChild(b);
-      });
-    }
-
-    document.getElementById("nextQuizBtn").addEventListener("click", () => {
-      quizIdx = (quizIdx + 1) % quizQuestions.length;
-      renderQuiz();
-    });
-
-    function renderBadges() {
-      const grid = document.getElementById("badgesGrid");
-      grid.innerHTML = badges.map(b => {
-        const isUnlocked = state.unlockedBadges.includes(b.id) || state.stars >= b.reqStars;
-        return `
-          <div class="badge-item ${isUnlocked ? "unlocked" : ""}">
-            <div style="font-size:32px; margin-bottom:6px;">${b.icon}</div>
-            <div style="font-weight:800; color:var(--navy); font-size:14.5px;">${b.name}</div>
-            <div style="font-size:12px; color:var(--muted); margin-top:4px;">
-              ${isUnlocked ? "مفتوح ✓" : `يتطلب ${b.reqStars} نجمة`}
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    // Countdown timer
-    setInterval(() => {
-      if (state.remainingSeconds > 0) {
-        state.remainingSeconds--;
-        if (state.remainingSeconds % 15 === 0) saveState();
-        renderTopStats();
-      }
-    }, 1000);
-
-    // Parent Modal
-    const parentModal = document.getElementById("parentModal");
-    document.getElementById("openParentBtn").addEventListener("click", () => {
-      document.getElementById("parentLockView").style.display = "block";
-      document.getElementById("parentSettingsView").style.display = "none";
-      document.getElementById("parentAnswerInput").value = "";
-      parentModal.classList.add("open");
-    });
-
-    document.getElementById("closeParentBtn").addEventListener("click", () => {
-      parentModal.classList.remove("open");
-    });
-
-    document.getElementById("unlockParentBtn").addEventListener("click", () => {
-      const val = Number(document.getElementById("parentAnswerInput").value);
-      if (val === 15) {
-        document.getElementById("parentLockView").style.display = "none";
-        document.getElementById("parentSettingsView").style.display = "block";
-        document.getElementById("dailyLimitInput").value = state.dailyLimitMinutes;
-      } else {
-        showToast("الرقم غير صحيح، حاول مرة أخرى");
-      }
-    });
-
-    document.getElementById("saveParentSettingsBtn").addEventListener("click", () => {
-      const mins = Math.max(5, Math.min(180, Number(document.getElementById("dailyLimitInput").value) || 45));
-      state.dailyLimitMinutes = mins;
-      state.remainingSeconds = mins * 60;
-      saveState();
-      renderTopStats();
-      parentModal.classList.remove("open");
-      showToast(`تم حفظ المدة اليومية (${mins} دقيقة)`);
-    });
-
-    document.getElementById("resetProgressBtn").addEventListener("click", () => {
-      state = { ...defaultState };
-      saveState();
-      renderTopStats();
-      renderEpisodes();
-      renderBadges();
-      parentModal.classList.remove("open");
-      showToast("تمت إعادة ضبط التقدم بنجاح");
-    });
-
-    // Initial render
-    renderTopStats();
-    renderEpisodes();
-    renderQuiz();
-    renderBadges();
-  </script>
-</body>
-</html>
+      // مؤشرات المحتوى الإيجابي والهادف للأطفال
+      const POSITIVE_CHILD_KEYWORDS = [
+        "قرآن", "تلاوة", "سورة", "آية", "أذكار", "انشودة", "أن
