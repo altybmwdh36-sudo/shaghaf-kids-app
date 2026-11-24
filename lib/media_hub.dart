@@ -94,145 +94,212 @@ class _HubTile extends StatelessWidget {
   );
 }
 
+class ShaghafVideo {
+  const ShaghafVideo({required this.title, required this.description, required this.category, required this.thumbnail, required this.videoUrl, required this.sourceName});
+  final String title, description, category, thumbnail, videoUrl, sourceName;
+}
+
+const _shaghafVideos = <ShaghafVideo>[
+  ShaghafVideo(
+    title: 'رحلة ممتعة عبر المجموعة الشمسية',
+    description: 'جولة بصرية بين الشمس والكواكب للتعرّف إلى عالمنا الفضائي',
+    category: 'الفضاء',
+    thumbnail: 'https://svs.gsfc.nasa.gov/vis/a020000/a020300/a020391/SolarSystemFlythrough_422ProRes.00001_searchweb.png',
+    videoUrl: 'https://svs.gsfc.nasa.gov/vis/a020000/a020300/a020391/SolarSystemFlythrough_1080.mp4',
+    sourceName: 'NASA – Goddard Space Flight Center',
+  ),
+];
+
 class VideoLibraryScreen extends StatefulWidget {
   const VideoLibraryScreen({super.key});
-
   @override
   State<VideoLibraryScreen> createState() => _VideoLibraryScreenState();
 }
 
 class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
-  final urlController = TextEditingController();
-  VideoPlayerController? controller;
-  bool loading = false;
-  String? error;
+  String category = 'الكل';
+  String query = '';
 
-  @override
-  void dispose() {
-    urlController.dispose();
-    controller?.dispose();
-    super.dispose();
-  }
+  List<ShaghafVideo> get filteredVideos => _shaghafVideos.where((video) {
+    final categoryMatch = category == 'الكل' || video.category == category;
+    final q = query.trim();
+    return categoryMatch && (q.isEmpty || video.title.contains(q) || video.description.contains(q) || video.category.contains(q));
+  }).toList();
 
-  Future<void> loadVideo() async {
-    final uri = Uri.tryParse(urlController.text.trim());
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
-      setState(() => error = 'أدخل رابط فيديو مباشر يبدأ بـ https://');
-      return;
-    }
-    setState(() {
-      loading = true;
-      error = null;
-    });
-    final old = controller;
-    controller = null;
-    await old?.dispose();
-    final next = VideoPlayerController.networkUrl(uri);
-    try {
-      await next.initialize();
-      await next.setLooping(false);
-      if (!mounted) {
-        await next.dispose();
-        return;
-      }
-      setState(() {
-        controller = next;
-        loading = false;
-      });
-      await next.play();
-    } catch (_) {
-      await next.dispose();
-      if (!mounted) return;
-      setState(() {
-        loading = false;
-        error = 'تعذّر تشغيل هذا الرابط. تأكد أنه رابط فيديو مباشر ومدعوم.';
-      });
-    }
+  Future<void> openVideo(ShaghafVideo video) async {
+    await showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      backgroundColor: Colors.black,
+      builder: (context) => _ShaghafVideoPlayer(video: video),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final videos = filteredVideos;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('اكتشف وشاهد', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                const Text('مقاطع معرفية مختارة بعناية من مصادر موثوقة', style: TextStyle(color: Colors.black54)),
+                const SizedBox(height: 14),
+                TextField(
+                  onChanged: (value) => setState(() => query = value),
+                  decoration: InputDecoration(
+                    hintText: 'ابحث عن فيديو أو موضوع...', prefixIcon: const Icon(Icons.search),
+                    filled: true, fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 42,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: ['الكل', 'الفضاء', 'العلوم', 'الطبيعة', 'التعليم'].map((item) => Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 8),
+                      child: ChoiceChip(label: Text(item), selected: category == item, onSelected: (_) => setState(() => category = item)),
+                    )).toList(),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+          if (videos.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
+              sliver: SliverList(delegate: SliverChildBuilderDelegate((context, index) {
+                final video = videos[index];
+                return Card(
+                  clipBehavior: Clip.antiAlias, margin: const EdgeInsets.only(bottom: 16),
+                  child: InkWell(
+                    onTap: () => openVideo(video),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Stack(fit: StackFit.expand, children: [
+                          Image.network(video.thumbnail, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(color: const Color(0xFF102C43), child: const Icon(Icons.public, color: Colors.white, size: 64))),
+                          Container(color: Colors.black.withValues(alpha: 0.16)),
+                          const Center(child: CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.play_arrow_rounded, size: 42, color: _green))),
+                          Positioned(bottom: 10, right: 10, child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                            decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(6)),
+                            child: const Text('شاهد الآن', style: TextStyle(color: Colors.white, fontSize: 11)),
+                          )),
+                        ]),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const CircleAvatar(backgroundColor: Color(0xFFE1F0E8), child: Icon(Icons.rocket_launch, color: _green)),
+                          const SizedBox(width: 11),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(video.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 5),
+                            Text(video.description, style: const TextStyle(color: Colors.black54, height: 1.4)),
+                            const SizedBox(height: 7),
+                            Text('\${video.sourceName}  •  \${video.category}', style: const TextStyle(color: _green, fontSize: 11)),
+                          ])),
+                          const Icon(Icons.more_vert),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                );
+              }, childCount: videos.length)),
+            )
+          else
+            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد فيديوهات في هذا التصنيف حالياً'))),
+          const SliverToBoxAdapter(child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 22),
+            child: Text('تُضاف المقاطع إلى مكتبة شغف بعد التحقق من مصدرها ومناسبتها. هذه بداية المكتبة، وستتوسع مع اعتماد مصادر إضافية.',
+              textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.5)),
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShaghafVideoPlayer extends StatefulWidget {
+  const _ShaghafVideoPlayer({required this.video});
+  final ShaghafVideo video;
+  @override
+  State<_ShaghafVideoPlayer> createState() => _ShaghafVideoPlayerState();
+}
+
+class _ShaghafVideoPlayerState extends State<_ShaghafVideoPlayer> {
+  VideoPlayerController? controller;
+  bool loading = true;
+  String? error;
+
+  @override
+  void initState() { super.initState(); initializeVideo(); }
+
+  Future<void> initializeVideo() async {
+    final next = VideoPlayerController.networkUrl(Uri.parse(widget.video.videoUrl));
+    try {
+      await next.initialize();
+      await next.setLooping(false);
+      if (!mounted) { await next.dispose(); return; }
+      setState(() { controller = next; loading = false; });
+      await next.play();
+    } catch (_) {
+      await next.dispose();
+      if (mounted) setState(() { loading = false; error = 'تعذّر تحميل الفيديو. تحقق من اتصال الإنترنت وحاول مجدداً.'; });
+    }
+  }
+
+  @override
+  void dispose() { controller?.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
     final player = controller;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text('مكتبة الفيديو', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        const Text('مشغّل فيديو فعلي للروابط المباشرة. ستضاف مكتبة شغف المنتقاة عند تجهيز مصادر المحتوى.'),
-        const SizedBox(height: 16),
-        TextField(
-          controller: urlController,
-          keyboardType: TextInputType.url,
-          textDirection: TextDirection.ltr,
-          decoration: const InputDecoration(
-            labelText: 'رابط فيديو مباشر',
-            hintText: 'https://example.com/video.mp4',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.link),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.82,
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 16, 8),
+            child: Row(children: [
+              const Icon(Icons.play_circle, color: Colors.white), const SizedBox(width: 8),
+              const Expanded(child: Text('مشغّل شغف', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+              IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Colors.white)),
+            ]),
           ),
-        ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: loading ? null : loadVideo,
-          icon: const Icon(Icons.play_arrow),
-          label: Text(loading ? 'جارٍ تجهيز الفيديو...' : 'تشغيل الفيديو'),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: 10),
-          Text(error!, style: const TextStyle(color: Colors.red)),
-        ],
-        if (loading) const Padding(
-          padding: EdgeInsets.all(24),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        if (player != null && player.value.isInitialized) ...[
-          const SizedBox(height: 18),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: AspectRatio(
-              aspectRatio: player.value.aspectRatio,
-              child: VideoPlayer(player),
+          Expanded(child: Center(
+            child: loading ? const CircularProgressIndicator(color: Colors.white)
+              : error != null ? Padding(padding: const EdgeInsets.all(24), child: Text(error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center))
+              : player != null && player.value.isInitialized ? AspectRatio(aspectRatio: player.value.aspectRatio, child: VideoPlayer(player))
+              : const SizedBox.shrink(),
+          )),
+          if (player != null && player.value.isInitialized)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 18),
+              child: Column(children: [
+                VideoProgressIndicator(player, allowScrubbing: true, colors: const VideoProgressColors(playedColor: Color(0xFF66D6A8), bufferedColor: Colors.white38, backgroundColor: Colors.white24)),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  IconButton(onPressed: () => player.seekTo(player.value.position - const Duration(seconds: 10)), icon: const Icon(Icons.replay_10, color: Colors.white)),
+                  IconButton.filled(onPressed: () => setState(() { player.value.isPlaying ? player.pause() : player.play(); }), icon: Icon(player.value.isPlaying ? Icons.pause : Icons.play_arrow)),
+                  IconButton(onPressed: () => player.seekTo(player.value.position + const Duration(seconds: 10)), icon: const Icon(Icons.forward_10, color: Colors.white)),
+                ]),
+                const SizedBox(height: 4),
+                Text(widget.video.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+                const SizedBox(height: 4),
+                Text('المصدر: \${widget.video.sourceName}', style: const TextStyle(color: Colors.white60, fontSize: 11), textAlign: TextAlign.center),
+              ]),
             ),
-          ),
-          VideoProgressIndicator(player, allowScrubbing: true, padding: const EdgeInsets.symmetric(vertical: 12)),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                tooltip: 'إعادة عشر ثوانٍ',
-                onPressed: () => player.seekTo(player.value.position - const Duration(seconds: 10)),
-                icon: const Icon(Icons.replay_10),
-              ),
-              IconButton.filled(
-                tooltip: player.value.isPlaying ? 'إيقاف مؤقت' : 'تشغيل',
-                onPressed: () => setState(() {
-                  player.value.isPlaying ? player.pause() : player.play();
-                }),
-                icon: Icon(player.value.isPlaying ? Icons.pause : Icons.play_arrow),
-              ),
-              IconButton(
-                tooltip: 'تقديم عشر ثوانٍ',
-                onPressed: () => player.seekTo(player.value.position + const Duration(seconds: 10)),
-                icon: const Icon(Icons.forward_10),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 14),
-        const Card(
-          child: Padding(
-            padding: EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline, color: _green),
-                SizedBox(width: 10),
-                Expanded(child: Text('هذه المرحلة توفر المشغّل. لم نضف بعد قناة فيديو عامة أو قائمة مقاطع؛ يجب اعتماد مصادر موثوقة ومراجعة محتواها أولاً.')),
-              ],
-            ),
-          ),
-        ),
-      ],
+        ]),
+      ),
     );
   }
 }
