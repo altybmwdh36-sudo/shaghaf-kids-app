@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
@@ -101,12 +102,36 @@ class ShaghafVideo {
 
 const _shaghafVideos = <ShaghafVideo>[
   ShaghafVideo(
-    title: 'رحلة ممتعة عبر المجموعة الشمسية',
-    description: 'جولة بصرية بين الشمس والكواكب للتعرّف إلى عالمنا الفضائي',
+    title: 'كيف نطلق المركبات إلى الفضاء؟',
+    description: 'تعرّف إلى الصواريخ وكيف تحمل الأقمار والمركبات إلى الفضاء',
     category: 'الفضاء',
-    thumbnail: 'https://svs.gsfc.nasa.gov/vis/a020000/a020300/a020391/SolarSystemFlythrough_422ProRes.00001_searchweb.png',
-    videoUrl: 'https://svs.gsfc.nasa.gov/vis/a020000/a020300/a020391/SolarSystemFlythrough_1080.mp4',
-    sourceName: 'NASA – Goddard Space Flight Center',
+    thumbnail: '',
+    videoUrl: 'https://spaceplace.nasa.gov/review/launching-into-space/how-do-we-launch-things-into-space_1920x1080.mp4',
+    sourceName: 'NASA Space Place • الإنجليزية',
+  ),
+  ShaghafVideo(
+    title: 'ما هو الكسوف الشمسي؟',
+    description: 'شرح مصوّر لكيفية مرور القمر بين الشمس والأرض',
+    category: 'العلوم',
+    thumbnail: '',
+    videoUrl: 'https://spaceplace.nasa.gov/review/eclipse-snap/what-is-a-solar-eclipse_1920x1080.mp4',
+    sourceName: 'NASA Space Place • الإنجليزية',
+  ),
+  ShaghafVideo(
+    title: 'هل توجد كواكب تشبه الأرض؟',
+    description: 'اكتشف الكواكب التي تدور حول نجوم بعيدة وكيف يبحث العلماء عنها',
+    category: 'الفضاء',
+    thumbnail: '',
+    videoUrl: 'https://spaceplace.nasa.gov/review/exoplanet-snap/searching-for-other-planets-like-ours_1920x1080.mp4',
+    sourceName: 'NASA Space Place • الإنجليزية',
+  ),
+  ShaghafVideo(
+    title: 'كمية الماء على كوكب الأرض',
+    description: 'حقائق علمية مصوّرة عن المياه المالحة والعذبة على كوكبنا',
+    category: 'الطبيعة',
+    thumbnail: '',
+    videoUrl: 'https://spaceplace.nasa.gov/review/water/how-much-water-is-on-earth_1920x1080.mp4',
+    sourceName: 'NASA Space Place • الإنجليزية',
   ),
 ];
 
@@ -147,7 +172,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('اكتشف وشاهد', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
-                const Text('مقاطع معرفية مختارة بعناية من مصادر موثوقة', style: TextStyle(color: Colors.black54)),
+                const Text('مقاطع علمية مختارة من مصادر تعليمية موثوقة', style: TextStyle(color: Colors.black54)),
                 const SizedBox(height: 14),
                 TextField(
                   onChanged: (value) => setState(() => query = value),
@@ -162,7 +187,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                   height: 42,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: ['الكل', 'الفضاء', 'العلوم', 'الطبيعة', 'التعليم'].map((item) => Padding(
+                    children: ['الكل', 'الفضاء', 'العلوم', 'الطبيعة'].map((item) => Padding(
                       padding: const EdgeInsetsDirectional.only(end: 8),
                       child: ChoiceChip(label: Text(item), selected: category == item, onSelected: (_) => setState(() => category = item)),
                     )).toList(),
@@ -219,7 +244,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد فيديوهات في هذا التصنيف حالياً'))),
           const SliverToBoxAdapter(child: Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 22),
-            child: Text('تُضاف المقاطع إلى مكتبة شغف بعد التحقق من مصدرها ومناسبتها. هذه بداية المكتبة، وستتوسع مع اعتماد مصادر إضافية.',
+            child: Text('المقاطع الحالية من NASA Space Place وباللغة الإنجليزية. نضيف المحتوى العربي بعد مراجعة المصدر واللغة وملاءمة العمر.',
               textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.5)),
           )),
         ],
@@ -306,151 +331,92 @@ class _ShaghafVideoPlayerState extends State<_ShaghafVideoPlayer> {
 
 class AudioLibraryScreen extends StatefulWidget {
   const AudioLibraryScreen({super.key});
-
   @override
   State<AudioLibraryScreen> createState() => _AudioLibraryScreenState();
 }
 
 class _AudioLibraryScreenState extends State<AudioLibraryScreen> {
-  final urlController = TextEditingController();
-  final player = AudioPlayer();
-  bool loading = false;
-  String? error;
+  final FlutterTts tts = FlutterTts();
+  int? playingIndex;
+  bool speaking = false;
+  final lessons = const <Map<String, String>>[
+    {'title': 'رحلة إلى الفضاء', 'category': 'الفضاء', 'body': 'الفضاء واسع جداً، وفيه نجوم وكواكب ومجرات. تدور الأرض حول الشمس، ويستغرق دورانها دورة كاملة سنة واحدة. أما القمر فيدور حول الأرض، ونراه بأشكال مختلفة خلال الشهر.'},
+    {'title': 'أسرار الماء على الأرض', 'category': 'الطبيعة', 'body': 'الماء أساس الحياة. تغطي المياه معظم سطح الأرض، ومعظمها ماء مالح في المحيطات. نحتاج إلى الماء العذب للشرب والزراعة، لذلك علينا المحافظة عليه وعدم الإسراف فيه.'},
+    {'title': 'كيف يعمل العقل أثناء التعلم؟', 'category': 'التعليم', 'body': 'يتعلم العقل عندما ننتبه ونفهم ونتدرب. يساعد النوم الجيد والتكرار والراحة القصيرة على تثبيت المعلومات. وإذا أخطأنا، نستطيع أن نتعلم من الخطأ ونحاول مرة أخرى.'},
+    {'title': 'قيمة الصدق', 'category': 'القيم', 'body': 'الصدق أن نقول الحقيقة ونحافظ على الأمانة في كلامنا وأعمالنا. الشخص الصادق يكسب ثقة الناس، ويشعر بالطمأنينة لأنه لا يحتاج إلى إخفاء الحقيقة.'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    tts.setLanguage('ar');
+    tts.setSpeechRate(0.45);
+    tts.setCompletionHandler(() {
+      if (mounted) setState(() { speaking = false; playingIndex = null; });
+    });
+    tts.setCancelHandler(() {
+      if (mounted) setState(() { speaking = false; playingIndex = null; });
+    });
+  }
 
   @override
   void dispose() {
-    urlController.dispose();
-    player.dispose();
+    tts.stop();
     super.dispose();
   }
 
-  Future<void> loadAudio() async {
-    final uri = Uri.tryParse(urlController.text.trim());
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
-      setState(() => error = 'أدخل رابط ملف صوتي مباشر يبدأ بـ https://');
+  Future<void> playLesson(int index) async {
+    if (playingIndex == index && speaking) {
+      await tts.stop();
+      if (mounted) setState(() { speaking = false; playingIndex = null; });
       return;
     }
-    setState(() {
-      loading = true;
-      error = null;
-    });
+    await tts.stop();
+    if (mounted) setState(() { playingIndex = index; speaking = true; });
     try {
-      await player.setUrl(uri.toString());
-      await player.play();
-      if (mounted) setState(() => loading = false);
+      await tts.speak(lessons[index]['body']!);
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          loading = false;
-          error = 'تعذّر تشغيل الملف الصوتي. تحقق من الرابط وصيغة الملف.';
-        });
-      }
+      if (mounted) setState(() { speaking = false; playingIndex = null; });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذّر تشغيل القراءة الصوتية. تأكد من توفر صوت عربي على الجهاز.')),
+      );
     }
-  }
-
-  String formatTime(Duration? duration) {
-    if (duration == null) return '00:00';
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(16),
-    children: [
-      const Text('المكتبة الصوتية', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 6),
-      const Text('مشغّل للدروس والقصص والمواد الصوتية من روابط مباشرة.'),
-      const SizedBox(height: 16),
-      TextField(
-        controller: urlController,
-        keyboardType: TextInputType.url,
-        textDirection: TextDirection.ltr,
-        decoration: const InputDecoration(
-          labelText: 'رابط ملف صوتي مباشر',
-          hintText: 'https://example.com/audio.mp3',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.link),
-        ),
-      ),
-      const SizedBox(height: 10),
-      FilledButton.icon(
-        onPressed: loading ? null : loadAudio,
-        icon: const Icon(Icons.headphones),
-        label: Text(loading ? 'جارٍ التحميل...' : 'تحميل وتشغيل الصوت'),
-      ),
-      if (error != null) Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Text(error!, style: const TextStyle(color: Colors.red)),
-      ),
-      const SizedBox(height: 22),
-      Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              const Icon(Icons.graphic_eq, size: 54, color: _green),
-              const SizedBox(height: 8),
-              const Text('مشغّل شغف الصوتي', style: TextStyle(fontWeight: FontWeight.bold)),
-              StreamBuilder<Duration?>(
-                stream: player.durationStream,
-                builder: (context, snapshot) {
-                  final duration = snapshot.data ?? Duration.zero;
-                  return StreamBuilder<Duration>(
-                    stream: player.positionStream,
-                    builder: (context, positionSnapshot) {
-                      final position = positionSnapshot.data ?? Duration.zero;
-                      final max = duration.inMilliseconds > 0 ? duration.inMilliseconds.toDouble() : 1.0;
-                      final value = position.inMilliseconds.clamp(0, max.toInt()).toDouble();
-                      return Column(
-                        children: [
-                          Slider(
-                            value: value,
-                            max: max,
-                            onChanged: duration == Duration.zero
-                                ? null
-                                : (v) => player.seek(Duration(milliseconds: v.round())),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(formatTime(position)),
-                              Text(formatTime(duration)),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('المكتبة الصوتية', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        const Text('استمع إلى دروس قصيرة باللغة العربية. تُقرأ النصوص بصوت الجهاز.'),
+        const SizedBox(height: 12),
+        ...List.generate(lessons.length, (index) {
+          final lesson = lessons[index];
+          final active = playingIndex == index && speaking;
+          return Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: const Color(0xFFE1F0E8),
+                child: Icon(active ? Icons.graphic_eq : Icons.headphones, color: _green),
               ),
-              StreamBuilder<PlayerState>(
-                stream: player.playerStateStream,
-                builder: (context, snapshot) {
-                  final playing = snapshot.data?.playing ?? false;
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: () => player.seek(Duration.zero),
-                        icon: const Icon(Icons.stop_circle_outlined),
-                      ),
-                      IconButton.filled(
-                        onPressed: () => playing ? player.pause() : player.play(),
-                        icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                      ),
-                    ],
-                  );
-                },
+              title: Text(lesson['title']!, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(lesson['category']!),
+              trailing: IconButton(
+                tooltip: active ? 'إيقاف' : 'استمع',
+                onPressed: () => playLesson(index),
+                icon: Icon(active ? Icons.stop_circle : Icons.play_circle_fill, color: _green, size: 32),
               ),
-            ],
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      const Text('ستظهر هنا لاحقاً مكتبة شغف الصوتية بعد اعتماد المواد ومصادرها.'),
-    ],
+              onTap: () => playLesson(index),
+            ),
+          );
+        }),
+        const SizedBox(height: 12),
+        const Text('ملاحظة: جودة الصوت وتوفر النطق العربي يعتمدان على محرك تحويل النص إلى كلام المثبّت في الهاتف.'),
+      ],
+    ),
   );
 }
 
