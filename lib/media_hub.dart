@@ -314,7 +314,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                             const SizedBox(height: 5),
                             Text(video.description, style: const TextStyle(color: Colors.black54, height: 1.4)),
                             const SizedBox(height: 7),
-                            Text('\${video.sourceName}  •  \${video.category}', style: const TextStyle(color: _green, fontSize: 11)),
+                            Text('${video.sourceName}  •  ${video.category}', style: const TextStyle(color: _green, fontSize: 11)),
                           ])),
                           const Icon(Icons.more_vert),
                         ]),
@@ -323,7 +323,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                   ),
                 );
               }, childCount: videos.length)),
-            )
+            ),
           if (hasMoreRemote)
             SliverToBoxAdapter(child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
