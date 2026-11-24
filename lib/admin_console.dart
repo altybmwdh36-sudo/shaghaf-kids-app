@@ -134,10 +134,10 @@ class _AdminStatsState extends State<_AdminStats> {
     setState(() { loading = true; error = null; });
     try {
       final db = Supabase.instance.client;
-      final members = await db.from('subscribers').count(CountOption.exact);
-      final videos = await db.from('videos').count(CountOption.exact);
-      final comments = await db.from('comments').count(CountOption.exact);
-      final pending = await db.from('comments').count(CountOption.exact, query: (q) => q.eq('status', 'pending'));
+      final members = (await db.from('subscribers').select('id')).length;
+      final videos = (await db.from('videos').select('id')).length;
+      final comments = (await db.from('comments').select('id')).length;
+      final pending = (await db.from('comments').select('id').eq('status', 'pending')).length;
       if (mounted) setState(() => counts = {'المشتركون': members, 'الفيديوهات': videos, 'التعليقات': comments, 'تعليقات قيد المراجعة': pending});
     } catch (_) { if (mounted) setState(() => error = 'تعذر تحميل الإحصائيات. تحقق من الجداول وصلاحيات قاعدة البيانات.'); }
     finally { if (mounted) setState(() => loading = false); }
@@ -176,9 +176,35 @@ class _VideoAdminState extends State<_VideoAdmin> {
   String? fileName;
   bool busy = false;
   String? message;
+  List<Map<String, dynamic>> existingVideos = [];
+
+  @override
+  void initState() { super.initState(); loadVideos(); }
 
   @override
   void dispose() { title.dispose(); description.dispose(); category.dispose(); sourceUrl.dispose(); super.dispose(); }
+
+  Future<void> loadVideos() async {
+    try {
+      final rows = await Supabase.instance.client.from('videos')
+        .select('id,title,status,created_at').order('created_at', ascending: false).limit(100);
+      if (mounted) setState(() => existingVideos = List<Map<String, dynamic>>.from(rows));
+    } catch (_) { if (mounted) setState(() => message = 'تعذر تحميل قائمة الفيديوهات.'); }
+  }
+
+  Future<void> changeVideoStatus(Map<String, dynamic> video, String status) async {
+    try {
+      await Supabase.instance.client.from('videos').update({'status': status}).eq('id', video['id']);
+      await loadVideos();
+    } catch (_) { if (mounted) setState(() => message = 'تعذر تعديل حالة الفيديو.'); }
+  }
+
+  Future<void> deleteVideo(Map<String, dynamic> video) async {
+    try {
+      await Supabase.instance.client.from('videos').delete().eq('id', video['id']);
+      await loadVideos();
+    } catch (_) { if (mounted) setState(() => message = 'تعذر حذف الفيديو.'); }
+  }
 
   Future<void> pickVideo() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.video, withData: true);
@@ -210,6 +236,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       });
       title.clear(); description.clear(); sourceUrl.clear();
       setState(() { bytes = null; fileName = null; message = 'تم حفظ الفيديو في قاعدة البيانات.'; });
+      await loadVideos();
     } catch (e) {
       setState(() => message = 'تعذر نشر الفيديو. تحقق من إعداد التخزين والصلاحيات.');
     } finally { if (mounted) setState(() => busy = false); }
@@ -241,8 +268,28 @@ class _VideoAdminState extends State<_VideoAdmin> {
     FilledButton.icon(onPressed: busy ? null : publish, icon: const Icon(Icons.publish),
       label: Text(busy ? 'جارٍ الحفظ...' : 'حفظ ونشر الفيديو')),
     const SizedBox(height: 8),
-    const Text('تظهر المواد المنشورة بعد ربط مكتبة الفيديو بجدول videos. الملفات ترفع إلى التخزين المركزي.',
+    const Text('الملفات ترفع إلى التخزين المركزي، وتظهر المواد ذات حالة «منشور» بعد ربط واجهة المشتركين بالمكتبة المركزية.',
       style: TextStyle(fontSize: 12, color: Colors.black54)),
+    const Divider(height: 32),
+    const Text('الفيديوهات المسجلة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+    if (existingVideos.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('لا توجد فيديوهات مسجلة بعد.')),
+    ...existingVideos.map((video) => Card(child: ListTile(
+      title: Text(video['title']?.toString() ?? ''),
+      subtitle: Text('الحالة الحالية: ${video['status']}'),
+      trailing: PopupMenuButton<String>(
+        onSelected: (action) {
+          if (action == 'delete') { deleteVideo(video); }
+          else { changeVideoStatus(video, action); }
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: 'published', child: Text('نشر الفيديو')),
+          PopupMenuItem(value: 'pending', child: Text('إعادة للمراجعة')),
+          PopupMenuItem(value: 'draft', child: Text('تحويل إلى مسودة')),
+          PopupMenuItem(value: 'blocked', child: Text('حظر الفيديو')),
+          PopupMenuItem(value: 'delete', child: Text('حذف الفيديو')),
+        ],
+      ),
+    ))),
   ]);
 }
 
