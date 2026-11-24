@@ -341,7 +341,7 @@ class _ReportAdminState extends State<_ReportAdmin> {
 
   @override
   Widget build(BuildContext context) => RefreshIndicator(onRefresh: load,
-    child: loading ? const ListView(children: [LinearProgressIndicator()])
+    child: loading ? ListView(children: [LinearProgressIndicator()])
       : ListView(padding: const EdgeInsets.all(12), children: [
         const Text('بلاغات المحتوى', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
         if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
@@ -387,7 +387,7 @@ class _CommentAdminState extends State<_CommentAdmin> {
 
   @override
   Widget build(BuildContext context) => RefreshIndicator(onRefresh: load, child: loading
-    ? const ListView(children: [LinearProgressIndicator()])
+    ? ListView(children: [LinearProgressIndicator()])
     : ListView(padding: const EdgeInsets.all(12), children: [
       const Text('مراجعة التعليقات', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
       if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
