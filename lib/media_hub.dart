@@ -23,7 +23,7 @@ class _MediaHubScreenState extends State<MediaHubScreen> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      const VideoLibraryScreen(),
+      VideoLibraryScreen(initialQuery: widget.initialQuery),
       const AudioLibraryScreen(),
       const NotesLibraryScreen(),
     ];
@@ -138,7 +138,8 @@ const _shaghafVideos = <ShaghafVideo>[
 ];
 
 class VideoLibraryScreen extends StatefulWidget {
-  const VideoLibraryScreen({super.key});
+  const VideoLibraryScreen({super.key, this.initialQuery = ''});
+  final String initialQuery;
   @override
   State<VideoLibraryScreen> createState() => _VideoLibraryScreenState();
 }
@@ -146,6 +147,7 @@ class VideoLibraryScreen extends StatefulWidget {
 class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   String category = 'الكل';
   String query = '';
+  final TextEditingController searchController = TextEditingController();
   List<ShaghafVideo> remoteVideos = [];
   bool loadingRemote = false;
   bool hasMoreRemote = false;
@@ -157,7 +159,14 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   void initState() {
     super.initState();
     query = widget.initialQuery;
+    searchController.text = query;
     refreshOnlineVideos();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> refreshOnlineVideos({bool loadMore = false}) async {
@@ -244,7 +253,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                 if (connectionMessage != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(connectionMessage!, style: const TextStyle(color: Colors.orange, fontSize: 12))),
                 const SizedBox(height: 14),
                 TextField(
-                  controller: TextEditingController(text: query)..selection = TextSelection.collapsed(offset: query.length),
+                  controller: searchController,
                   onChanged: (value) => setState(() => query = value),
                   onSubmitted: (_) => refreshOnlineVideos(),
                   textInputAction: TextInputAction.search,
