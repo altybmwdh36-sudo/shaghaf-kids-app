@@ -83,9 +83,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                 NavigationDestination(icon: Icon(Icons.analytics_outlined), label: 'الإحصائيات'),
                 NavigationDestination(icon: Icon(Icons.video_library_outlined), label: 'الفيديوهات'),
                 NavigationDestination(icon: Icon(Icons.comment_outlined), label: 'التعليقات'),
+                NavigationDestination(icon: Icon(Icons.flag_outlined), label: 'البلاغات'),
               ]),
             Expanded(child: IndexedStack(index: tab, children: const [
-              _AdminStats(), _VideoAdmin(), _CommentAdmin(),
+              _AdminStats(), _VideoAdmin(), _CommentAdmin(), _ReportAdmin(),
             ])),
           ])
         : _loginForm(),
@@ -142,7 +143,15 @@ class _AdminStatsState extends State<_AdminStats> {
       final videos = (await db.from('videos').select('id')).length;
       final comments = (await db.from('comments').select('id')).length;
       final pending = (await db.from('comments').select('id').eq('status', 'pending')).length;
-      if (mounted) setState(() => counts = {'المشتركون': members, 'الفيديوهات': videos, 'التعليقات': comments, 'تعليقات قيد المراجعة': pending});
+      final now = DateTime.now().toUtc();
+      final today = DateTime.utc(now.year, now.month, now.day);
+      final weekStart = today.subtract(Duration(days: today.weekday - 1));
+      final monthStart = DateTime.utc(now.year, now.month, 1);
+      final newToday = (await db.from('subscribers').select('id').gte('created_at', today.toIso8601String())).length;
+      final newWeek = (await db.from('subscribers').select('id').gte('created_at', weekStart.toIso8601String())).length;
+      final newMonth = (await db.from('subscribers').select('id').gte('created_at', monthStart.toIso8601String())).length;
+      final active = (await db.from('subscribers').select('id').gte('last_seen_at', now.subtract(const Duration(days: 30)).toIso8601String())).length;
+      if (mounted) setState(() => counts = {'إجمالي المشتركين': members, 'مشتركون جدد اليوم': newToday, 'مشتركون جدد هذا الأسبوع': newWeek, 'مشتركون جدد هذا الشهر': newMonth, 'نشطون خلال 30 يومًا': active, 'الفيديوهات': videos, 'التعليقات': comments, 'تعليقات قيد المراجعة': pending});
     } catch (_) { if (mounted) setState(() => error = 'تعذر تحميل الإحصائيات. تحقق من الجداول وصلاحيات قاعدة البيانات.'); }
     finally { if (mounted) setState(() => loading = false); }
   }
@@ -157,7 +166,7 @@ class _AdminStatsState extends State<_AdminStats> {
       ...counts.entries.map((e) => Card(child: ListTile(
         leading: const CircleAvatar(backgroundColor: Color(0xFFE1F0E8), child: Icon(Icons.insights, color: _green)),
         title: Text(e.key), trailing: Text('${e.value}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))))),
-      const Padding(padding: EdgeInsets.only(top: 12), child: Text('إحصاءات النشاط اليومي والأسبوعي والشهري تُضاف بعد تفعيل تسجيل الأحداث المركزي للمشتركين.',
+      const Padding(padding: EdgeInsets.only(top: 12), child: Text('تعتمد الأرقام على السجلات المركزية. لن تظهر الاشتراكات الجديدة حتى ربط نموذج اشتراك الأعضاء بالخادم.',
         style: TextStyle(color: Colors.black54))),
     ],
   ));
@@ -295,6 +304,55 @@ class _VideoAdminState extends State<_VideoAdmin> {
       ),
     ))),
   ]);
+}
+
+
+class _ReportAdmin extends StatefulWidget {
+  const _ReportAdmin();
+  @override
+  State<_ReportAdmin> createState() => _ReportAdminState();
+}
+
+class _ReportAdminState extends State<_ReportAdmin> {
+  List<Map<String, dynamic>> reports = [];
+  bool loading = true;
+  String? error;
+  @override
+  void initState() { super.initState(); load(); }
+
+  Future<void> load() async {
+    setState(() { loading = true; error = null; });
+    try {
+      final rows = await Supabase.instance.client.from('content_reports')
+        .select('id,video_id,comment_id,reason,status,created_at')
+        .order('created_at', ascending: false).limit(100);
+      if (mounted) setState(() => reports = List<Map<String, dynamic>>.from(rows));
+    } catch (_) { if (mounted) setState(() => error = 'تعذر تحميل البلاغات.'); }
+    finally { if (mounted) setState(() => loading = false); }
+  }
+
+  Future<void> closeReport(Map<String, dynamic> report) async {
+    try {
+      await Supabase.instance.client.from('content_reports')
+        .update({'status': 'closed'}).eq('id', report['id']);
+      await load();
+    } catch (_) { if (mounted) setState(() => error = 'تعذر تحديث البلاغ.'); }
+  }
+
+  @override
+  Widget build(BuildContext context) => RefreshIndicator(onRefresh: load,
+    child: loading ? const ListView(children: [LinearProgressIndicator()])
+      : ListView(padding: const EdgeInsets.all(12), children: [
+        const Text('بلاغات المحتوى', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+        if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
+        if (reports.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('لا توجد بلاغات مسجلة.')),
+        ...reports.map((r) => Card(child: ListTile(
+          title: Text(r['reason']?.toString() ?? ''),
+          subtitle: Text('الحالة: ${r['status']}'),
+          trailing: r['status'] == 'closed' ? const Icon(Icons.check_circle_outline)
+            : IconButton(tooltip: 'إغلاق البلاغ', onPressed: () => closeReport(r), icon: const Icon(Icons.done)),
+        ))),
+      ]));
 }
 
 class _CommentAdmin extends StatefulWidget {
