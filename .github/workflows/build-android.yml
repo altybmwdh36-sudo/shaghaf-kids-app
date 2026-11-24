@@ -47,6 +47,8 @@ jobs:
           patterns = [
               (re.compile(r"(\bcompileSdkVersion\s*[= ]\s*)\d+"), r"\g<1>36"),
               (re.compile(r"(\bcompileSdk\s*=\s*)\d+"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdkVersion\s+)(?:flutter\.compileSdkVersion|\d+)"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdk\s*=\s*)(?:flutter\.compileSdkVersion|\d+)"), r"\g<1>36"),
           ]
           changed = []
           for root in roots:
