@@ -96,34 +96,47 @@ alter table public.content_reports enable row level security;
 alter table public.app_settings enable row level security;
 alter table public.admin_audit_log enable row level security;
 
+drop policy if exists "profile self or admin read" on public.profiles;
 create policy "profile self or admin read" on public.profiles for select to authenticated
 using (id = auth.uid() or public.is_shaghaf_admin());
+drop policy if exists "admin manages profiles" on public.profiles;
 create policy "admin manages profiles" on public.profiles for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
 
+drop policy if exists "admin reads subscriber totals and records" on public.subscribers;
 create policy "admin reads subscriber totals and records" on public.subscribers for select to authenticated
 using (public.is_shaghaf_admin());
+drop policy if exists "admin manages subscribers" on public.subscribers;
 create policy "admin manages subscribers" on public.subscribers for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
 
+drop policy if exists "published videos visible" on public.videos;
 create policy "published videos visible" on public.videos for select to anon, authenticated
 using (status = 'published' or public.is_shaghaf_admin());
+drop policy if exists "admin manages videos" on public.videos;
 create policy "admin manages videos" on public.videos for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
 
+drop policy if exists "approved comments visible" on public.comments;
 create policy "approved comments visible" on public.comments for select to anon, authenticated
 using (status = 'approved' or public.is_shaghaf_admin());
+drop policy if exists "admin moderates comments" on public.comments;
 create policy "admin moderates comments" on public.comments for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
 
+drop policy if exists "admin reads views" on public.video_views;
 create policy "admin reads views" on public.video_views for select to authenticated
 using (public.is_shaghaf_admin());
+drop policy if exists "admin reads likes" on public.video_likes;
 create policy "admin reads likes" on public.video_likes for select to authenticated
 using (public.is_shaghaf_admin());
+drop policy if exists "admin handles reports" on public.content_reports;
 create policy "admin handles reports" on public.content_reports for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+drop policy if exists "admin controls settings" on public.app_settings;
 create policy "admin controls settings" on public.app_settings for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+drop policy if exists "admin reads audit log" on public.admin_audit_log;
 create policy "admin reads audit log" on public.admin_audit_log for select to authenticated
 using (public.is_shaghaf_admin());
 
@@ -131,13 +144,17 @@ insert into storage.buckets (id, name, public)
 values ('shaghaf-videos', 'shaghaf-videos', true)
 on conflict (id) do nothing;
 
+drop policy if exists "public reads published media" on storage.objects;
 create policy "public reads published media" on storage.objects for select
 using (bucket_id = 'shaghaf-videos');
+drop policy if exists "admins upload media" on storage.objects;
 create policy "admins upload media" on storage.objects for insert to authenticated
 with check (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
+drop policy if exists "admins update media" on storage.objects;
 create policy "admins update media" on storage.objects for update to authenticated
 using (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin())
 with check (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
+drop policy if exists "admins delete media" on storage.objects;
 create policy "admins delete media" on storage.objects for delete to authenticated
 using (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
 
