@@ -397,7 +397,7 @@ class _ShaghafVideoPlayerState extends State<_ShaghafVideoPlayer> {
           ),
           Expanded(child: Center(
             child: loading ? const CircularProgressIndicator(color: Colors.white)
-              : error != null ? Padding(padding: const EdgeInsets.all(24), child: Text(error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center))
+              : error != null ? Column(mainAxisSize: MainAxisSize.min, children: [Padding(padding: const EdgeInsets.all(24), child: Text(error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)), OutlinedButton.icon(onPressed: () { setState(() { loading = true; error = null; }); initializeVideo(); }, icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة'))])
               : player != null && player.value.isInitialized ? AspectRatio(aspectRatio: player.value.aspectRatio, child: VideoPlayer(player))
               : const SizedBox.shrink(),
           )),
@@ -408,13 +408,13 @@ class _ShaghafVideoPlayerState extends State<_ShaghafVideoPlayer> {
                 VideoProgressIndicator(player, allowScrubbing: true, colors: const VideoProgressColors(playedColor: Color(0xFF66D6A8), bufferedColor: Colors.white38, backgroundColor: Colors.white24)),
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   IconButton(onPressed: () => player.seekTo(player.value.position - const Duration(seconds: 10)), icon: const Icon(Icons.replay_10, color: Colors.white)),
-                  IconButton.filled(onPressed: () => setState(() { player.value.isPlaying ? player.pause() : player.play(); }), icon: Icon(player.value.isPlaying ? Icons.pause : Icons.play_arrow)),
+                  ValueListenableBuilder<VideoPlayerValue>(valueListenable: player, builder: (context, value, _) => IconButton.filled(onPressed: () => value.isPlaying ? player.pause() : player.play(), icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow))),
                   IconButton(onPressed: () => player.seekTo(player.value.position + const Duration(seconds: 10)), icon: const Icon(Icons.forward_10, color: Colors.white)),
                 ]),
                 const SizedBox(height: 4),
                 Text(widget.video.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
                 const SizedBox(height: 4),
-                Text('المصدر: \${widget.video.sourceName}', style: const TextStyle(color: Colors.white60, fontSize: 11), textAlign: TextAlign.center),
+                Text('المصدر: ${widget.video.sourceName}', style: const TextStyle(color: Colors.white60, fontSize: 11), textAlign: TextAlign.center),
               ]),
             ),
         ]),
