@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'backend.dart';
 
 const _green = Color(0xFF0B5B46);
 
@@ -143,12 +145,68 @@ class VideoLibraryScreen extends StatefulWidget {
 class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   String category = 'الكل';
   String query = '';
+  List<ShaghafVideo> remoteVideos = [];
+  bool loadingRemote = false;
+  bool connected = false;
+  String? connectionMessage;
 
-  List<ShaghafVideo> get filteredVideos => _shaghafVideos.where((video) {
-    final categoryMatch = category == 'الكل' || video.category == category;
-    final q = query.trim();
-    return categoryMatch && (q.isEmpty || video.title.contains(q) || video.description.contains(q) || video.category.contains(q));
-  }).toList();
+  @override
+  void initState() {
+    super.initState();
+    refreshOnlineVideos();
+  }
+
+  Future<void> refreshOnlineVideos() async {
+    if (!shaghafBackendReady) {
+      if (mounted) setState(() {
+        connected = false;
+        connectionMessage = 'المكتبة المحلية متاحة؛ ربط المكتبة المباشرة يتطلب إعداد خادم شغف.';
+      });
+      return;
+    }
+    if (mounted) setState(() { loadingRemote = true; connectionMessage = null; });
+    try {
+      final rows = await Supabase.instance.client
+          .from('videos')
+          .select('title,description,category,language,video_url')
+          .eq('status', 'published')
+          .order('created_at', ascending: false)
+          .limit(100);
+      final items = rows.map<ShaghafVideo>((row) {
+        final data = Map<String, dynamic>.from(row);
+        return ShaghafVideo(
+          title: (data['title'] ?? '').toString(),
+          description: (data['description'] ?? '').toString(),
+          category: (data['category'] ?? 'متنوع').toString(),
+          thumbnail: '',
+          videoUrl: (data['video_url'] ?? '').toString(),
+          sourceName: 'مكتبة شغف • ${data['language'] ?? 'العربية'}',
+        );
+      }).where((video) => video.title.isNotEmpty && video.videoUrl.startsWith('https://')).toList();
+      if (mounted) setState(() {
+        remoteVideos = items;
+        connected = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() {
+        connected = false;
+        connectionMessage = 'تعذر تحديث المكتبة الآن. اعرض المحتوى المتاح وحاول التحديث لاحقاً.';
+      });
+    } finally {
+      if (mounted) setState(() => loadingRemote = false);
+    }
+  }
+
+  List<ShaghafVideo> get allVideos => [...remoteVideos, ..._shaghafVideos];
+
+  List<ShaghafVideo> get filteredVideos {
+    final q = query.trim().toLowerCase();
+    return allVideos.where((video) {
+      final categoryMatch = category == 'الكل' || video.category == category;
+      final text = '${video.title} ${video.description} ${video.category} ${video.sourceName}'.toLowerCase();
+      return categoryMatch && (q.isEmpty || text.contains(q));
+    }).toList();
+  }
 
   Future<void> openVideo(ShaghafVideo video) async {
     await showModalBottomSheet<void>(
@@ -161,9 +219,13 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final videos = filteredVideos;
+    final categories = ['الكل', ...{..._shaghafVideos.map((v) => v.category), ...remoteVideos.map((v) => v.category)}];
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: CustomScrollView(
+      child: RefreshIndicator(
+        onRefresh: refreshOnlineVideos,
+        child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
@@ -171,7 +233,9 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('اكتشف وشاهد', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
-                const Text('مقاطع علمية مختارة من مصادر تعليمية موثوقة', style: TextStyle(color: Colors.black54)),
+                Text(connected ? 'متصل بالإنترنت • مكتبة شغف المحدّثة' : 'مقاطع مختارة مع إمكانية تحديث المكتبة عند الاتصال', style: const TextStyle(color: Colors.black54)),
+                if (loadingRemote) const Padding(padding: EdgeInsets.only(top: 8), child: LinearProgressIndicator()),
+                if (connectionMessage != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(connectionMessage!, style: const TextStyle(color: Colors.orange, fontSize: 12))),
                 const SizedBox(height: 14),
                 TextField(
                   onChanged: (value) => setState(() => query = value),
@@ -186,7 +250,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                   height: 42,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: ['الكل', 'الفضاء', 'العلوم', 'الطبيعة'].map((item) => Padding(
+                    children: categories.map((item) => Padding(
                       padding: const EdgeInsetsDirectional.only(end: 8),
                       child: ChoiceChip(label: Text(item), selected: category == item, onSelected: (_) => setState(() => category = item)),
                     )).toList(),
@@ -249,6 +313,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
               textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.5)),
           )),
         ],
+      ),
       ),
     );
   }
