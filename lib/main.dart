@@ -142,8 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class ShaghafItem {
-  const ShaghafItem(this.title, this.description, this.category, this.icon);
-  final String title, description, category;
+  const ShaghafItem(this.title, this.description, this.category, this.icon, this.content);
+  final String title, description, category, content;
   final IconData icon;
 }
 
@@ -159,14 +159,22 @@ class _HomeScreenState extends State<HomeScreen> {
   static const categories = ['الكل','العلوم والفضاء','الرياضة','الدين والقيم',
     'التربية والأخلاق','القراءة واللغة','الفنون والإبداع','الألغاز والترفيه'];
   static const catalog = <ShaghafItem>[
-    ShaghafItem('رحلة إلى المجموعة الشمسية','تعرّف إلى الكواكب والنجوم وأسرار الفضاء بأسلوب مبسط.','العلوم والفضاء',Icons.public),
-    ShaghafItem('كيف يعمل جسم الإنسان؟','اكتشاف مبسط لأجهزة الجسم ووظائفها.','العلوم والفضاء',Icons.biotech_outlined),
-    ShaghafItem('الرياضة وروح الفريق','التعاون والانضباط واحترام الآخرين من خلال الرياضة.','الرياضة',Icons.sports_soccer),
-    ShaghafItem('قيمة الصدق والأمانة','مواقف يومية نتعلم منها الصدق وتحمل المسؤولية.','التربية والأخلاق',Icons.volunteer_activism_outlined),
-    ShaghafItem('آداب الحوار والاستماع','الحوار الهادئ واحترام اختلاف الآراء.','الدين والقيم',Icons.forum_outlined),
-    ShaghafItem('متعة القراءة','أفكار تساعد على بناء عادة القراءة وتوسيع الخيال.','القراءة واللغة',Icons.menu_book_outlined),
-    ShaghafItem('أطلق خيالك','أنشطة إبداعية لتنمية الرسم والتصميم والتفكير.','الفنون والإبداع',Icons.palette_outlined),
-    ShaghafItem('ألغاز تنشّط التفكير','تحديات لطيفة لتنمية مهارات حل المشكلات.','الألغاز والترفيه',Icons.extension_outlined),
+    ShaghafItem('رحلة إلى المجموعة الشمسية','تعرّف إلى الكواكب والنجوم وأسرار الفضاء بأسلوب مبسط.','العلوم والفضاء',Icons.public,
+      'تدور المجموعة الشمسية حول الشمس، وهي نجم يمد كواكبها بالضوء والحرارة. تضم ثمانية كواكب، ولكل كوكب خصائص تميّزه.\\n\\nعطارد أقرب الكواكب إلى الشمس، والزهرة شديد الحرارة، والأرض موطن الحياة المعروف لنا، أما المريخ فيُعرف بالكوكب الأحمر. وتأتي بعده الكواكب العملاقة: المشتري وزحل وأورانوس ونبتون.\\n\\nلا تسير الكواكب في خطوط مستقيمة، بل تتحرك في مدارات حول الشمس بفعل الجاذبية. ويستغرق كل كوكب زمناً مختلفاً لإكمال دورة واحدة حولها.'),
+    ShaghafItem('كيف يعمل جسم الإنسان؟','اكتشاف مبسط لأجهزة الجسم ووظائفها.','العلوم والفضاء',Icons.biotech_outlined,
+      'جسم الإنسان يعمل بتعاون أجهزة كثيرة. فالجهاز التنفسي يساعدنا على أخذ الأكسجين، والجهاز الدوري ينقل الدم وما يحمله إلى أنحاء الجسم.\\n\\nيهضم الجهاز الهضمي الطعام ليستفيد الجسم من العناصر الغذائية، بينما يساعد الجهاز العصبي على استقبال المعلومات والتفكير والحركة.\\n\\nالنوم الكافي، والغذاء المتوازن، والنشاط اليومي، والنظافة الشخصية عادات تدعم صحة الجسم.'),
+    ShaghafItem('الرياضة وروح الفريق','التعاون والانضباط واحترام الآخرين من خلال الرياضة.','الرياضة',Icons.sports_soccer,
+      'الرياضة ليست منافسة على الفوز فقط؛ إنها فرصة لتعلّم التعاون والانضباط واحترام القواعد. يحتاج الفريق إلى أن يستمع أفراده بعضهم إلى بعض، وأن يتشاركوا المسؤولية.\\n\\nاللاعب الجيد يحترم زملاءه ومنافسيه والحكم، ويتقبل الفوز والخسارة بروح طيبة. ويمكن اختيار نشاط مناسب للعمر والقدرة وممارسته بأمان وانتظام.'),
+    ShaghafItem('قيمة الصدق والأمانة','مواقف يومية نتعلم منها الصدق وتحمل المسؤولية.','التربية والأخلاق',Icons.volunteer_activism_outlined,
+      'الصدق هو أن نقول الحقيقة، والأمانة هي أن نحافظ على الحقوق ونؤدي ما اؤتمنّا عليه. وهاتان القيمتان تبنيان الثقة بين الناس.\\n\\nإذا أخطأنا، فإن الاعتراف بالخطأ ومحاولة إصلاحه أفضل من إخفائه أو إلقاء اللوم على الآخرين. وفي المدرسة والبيت، تظهر الأمانة في حفظ الممتلكات وإرجاع الأشياء إلى أصحابها.'),
+    ShaghafItem('آداب الحوار والاستماع','الحوار الهادئ واحترام اختلاف الآراء.','الدين والقيم',Icons.forum_outlined,
+      'الحوار الناجح يبدأ بالاستماع الجيد، ثم التعبير عن الرأي بوضوح وهدوء. ليس ضرورياً أن نتفق دائماً، لكن من المهم أن نحترم الأشخاص حتى عندما تختلف آراؤنا.\\n\\nمن آداب الحوار عدم المقاطعة، واختيار الكلمات الطيبة، وطلب التوضيح عند عدم الفهم، والابتعاد عن السخرية. قال تعالى: «وَقُولُوا لِلنَّاسِ حُسْنًا».'),
+    ShaghafItem('متعة القراءة','أفكار تساعد على بناء عادة القراءة وتوسيع الخيال.','القراءة واللغة',Icons.menu_book_outlined,
+      'القراءة نافذة نطل منها على العلوم والقصص والتجارب والأفكار. وهي توسّع المفردات وتساعد على التركيز والتعبير.\\n\\nابدأ بموضوع تحبه، وحدد وقتاً قصيراً مناسباً كل يوم. بعد القراءة، حاول أن تلخص الفكرة الرئيسية بجملة أو تذكر معلومة جديدة تعلمتها. ومع الوقت ستصبح القراءة عادة ممتعة.'),
+    ShaghafItem('أطلق خيالك','أنشطة إبداعية لتنمية الرسم والتصميم والتفكير.','الفنون والإبداع',Icons.palette_outlined,
+      'الإبداع هو تجربة أفكار جديدة وإيجاد طرق مختلفة للتعبير وحل المشكلات. يمكن أن يظهر في الرسم والكتابة والتصميم وصناعة الأشياء والعلوم.\\n\\nجرّب أن ترسم مكاناً خيالياً، أو تكتب نهاية مختلفة لقصة، أو تصمم حلاً بسيطاً لمشكلة في المنزل. لا يشترط أن تكون النتيجة مثالية؛ المهم أن تتعلم من التجربة.'),
+    ShaghafItem('ألغاز تنشّط التفكير','تحديات لطيفة لتنمية مهارات حل المشكلات.','الألغاز والترفيه',Icons.extension_outlined,
+      'لغز: شيء كلما أخذت منه كَبُر، فما هو؟\\n\\nفكّر قليلاً قبل قراءة الإجابة.\\n\\nالإجابة: الحفرة؛ فكلما أزلت منها التراب اتسعت.\\n\\nالألغاز تدربنا على النظر إلى المسألة من زوايا مختلفة، وشرح سبب الإجابة لا يقل أهمية عن الوصول إليها.'),
   ];
 
   final favorites = <String>{};
@@ -188,21 +196,66 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => history.add(item.title));
     showDialog<void>(context: context, builder: (ctx) => Directionality(
       textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        icon: Icon(item.icon, size: 38, color: const Color(0xFF0B5B46)),
-        title: Text(item.title),
-        content: Text(item.description +
-          '\n\nهذه بطاقة تعريفية تجريبية. ستضاف المواد المرئية والصوتية بعد مراجعة مصادرها واعتمادها.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
-          FilledButton.tonal(onPressed: () {
-            setState(() {
-              if (favorites.contains(item.title)) { favorites.remove(item.title); }
-              else { favorites.add(item.title); }
-            });
-            Navigator.pop(ctx);
-          }, child: Text(favorites.contains(item.title) ? 'إزالة من المفضلة' : 'إضافة للمفضلة')),
-        ],
+      child: Dialog(
+        insetPadding: const EdgeInsets.all(18),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 620),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 12, 8),
+              child: Row(children: [
+                CircleAvatar(
+                  backgroundColor: const Color(0xFFE2F0E9),
+                  child: Icon(item.icon, color: const Color(0xFF0B5B46)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(item.title,
+                  style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold))),
+                IconButton(
+                  tooltip: 'إغلاق',
+                  onPressed: () => Navigator.pop(ctx),
+                  icon: const Icon(Icons.close),
+                ),
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(alignment: Alignment.centerRight,
+                child: Text(item.description,
+                  style: const TextStyle(color: Colors.black54))),
+            ),
+            const Divider(height: 24),
+            Flexible(child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: SelectableText(item.content,
+                style: const TextStyle(fontSize: 16, height: 1.8)),
+            )),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      if (favorites.contains(item.title)) {
+                        favorites.remove(item.title);
+                      } else {
+                        favorites.add(item.title);
+                      }
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  icon: Icon(favorites.contains(item.title)
+                    ? Icons.favorite : Icons.favorite_border),
+                  label: Text(favorites.contains(item.title)
+                    ? 'إزالة من المفضلة' : 'حفظ في المفضلة'),
+                )),
+                const SizedBox(width: 8),
+                TextButton(onPressed: () => Navigator.pop(ctx),
+                  child: const Text('تم')),
+              ]),
+            ),
+          ]),
+        ),
       ),
     ));
   }
