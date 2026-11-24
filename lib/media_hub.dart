@@ -10,7 +10,8 @@ import 'backend.dart';
 const _green = Color(0xFF0B5B46);
 
 class MediaHubScreen extends StatefulWidget {
-  const MediaHubScreen({super.key});
+  const MediaHubScreen({super.key, this.initialQuery = ''});
+  final String initialQuery;
 
   @override
   State<MediaHubScreen> createState() => _MediaHubScreenState();
@@ -147,16 +148,19 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   String query = '';
   List<ShaghafVideo> remoteVideos = [];
   bool loadingRemote = false;
+  bool hasMoreRemote = false;
+  static const int _pageSize = 30;
   bool connected = false;
   String? connectionMessage;
 
   @override
   void initState() {
     super.initState();
+    query = widget.initialQuery;
     refreshOnlineVideos();
   }
 
-  Future<void> refreshOnlineVideos() async {
+  Future<void> refreshOnlineVideos({bool loadMore = false}) async {
     if (!shaghafBackendReady) {
       if (mounted) setState(() {
         connected = false;
@@ -164,14 +168,15 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
       });
       return;
     }
+    if (loadingRemote) return;
     if (mounted) setState(() { loadingRemote = true; connectionMessage = null; });
     try {
-      final rows = await Supabase.instance.client
-          .from('videos')
-          .select('title,description,category,language,video_url')
-          .eq('status', 'published')
-          .order('created_at', ascending: false)
-          .limit(100);
+      final rows = await Supabase.instance.client.rpc('search_published_videos', params: {
+        'p_query': query.trim(),
+        'p_category': category == 'الكل' ? null : category,
+        'p_limit': _pageSize,
+        'p_offset': loadMore ? remoteVideos.length : 0,
+      }) as List<dynamic>;
       final items = rows.map<ShaghafVideo>((row) {
         final data = Map<String, dynamic>.from(row);
         return ShaghafVideo(
@@ -184,7 +189,8 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
         );
       }).where((video) => video.title.isNotEmpty && video.videoUrl.startsWith('https://')).toList();
       if (mounted) setState(() {
-        remoteVideos = items;
+        remoteVideos = loadMore ? [...remoteVideos, ...items] : items;
+        hasMoreRemote = items.length == _pageSize;
         connected = true;
       });
     } catch (_) {
@@ -238,9 +244,13 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                 if (connectionMessage != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(connectionMessage!, style: const TextStyle(color: Colors.orange, fontSize: 12))),
                 const SizedBox(height: 14),
                 TextField(
+                  controller: TextEditingController(text: query)..selection = TextSelection.collapsed(offset: query.length),
                   onChanged: (value) => setState(() => query = value),
+                  onSubmitted: (_) => refreshOnlineVideos(),
+                  textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
-                    hintText: 'ابحث عن فيديو أو موضوع...', prefixIcon: const Icon(Icons.search),
+                    hintText: 'ابحث في مكتبة شغف على الإنترنت...', prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: () => refreshOnlineVideos()),
                     filled: true, fillColor: Colors.white,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                   ),
@@ -252,7 +262,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                     scrollDirection: Axis.horizontal,
                     children: categories.map((item) => Padding(
                       padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: ChoiceChip(label: Text(item), selected: category == item, onSelected: (_) => setState(() => category = item)),
+                      child: ChoiceChip(label: Text(item), selected: category == item, onSelected: (_) { setState(() => category = item); refreshOnlineVideos(); }),
                     )).toList(),
                   ),
                 ),
@@ -305,8 +315,17 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                 );
               }, childCount: videos.length)),
             )
-          else
-            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد فيديوهات في هذا التصنيف حالياً'))),
+          if (hasMoreRemote)
+            SliverToBoxAdapter(child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+              child: OutlinedButton.icon(
+                onPressed: loadingRemote ? null : () => refreshOnlineVideos(loadMore: true),
+                icon: const Icon(Icons.expand_more),
+                label: Text(loadingRemote ? 'جارٍ التحميل...' : 'تحميل المزيد من الإنترنت'),
+              ),
+            )),
+          if (videos.isEmpty)
+            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد نتائج منشورة مطابقة في مكتبة شغف حالياً'))),
           const SliverToBoxAdapter(child: Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 22),
             child: Text('تُحدّث مكتبة الفيديوهات من خادم شغف، ولا يظهر فيها إلا المحتوى الذي اعتمده المشرفون بعد مراجعة المصدر واللغة وملاءمة العمر.',
