@@ -45,8 +45,8 @@ jobs:
               Path("android"),
           ]
           patterns = [
-              (re.compile(r"(\\bcompileSdkVersion\\s*[= ]\\s*)\\d+"), r"\\g<1>36"),
-              (re.compile(r"(\\bcompileSdk\\s*=\\s*)\\d+"), r"\\g<1>36"),
+              (re.compile(r"(\bcompileSdkVersion\s*[= ]\s*)\d+"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdk\s*=\s*)\d+"), r"\g<1>36"),
           ]
           changed = []
           for root in roots:
@@ -66,7 +66,7 @@ jobs:
                       gradle.write_text(updated)
                       changed.append(str(gradle))
           print("Updated Gradle compile SDK in:")
-          print("\\n".join(changed) if changed else "No plugin overrides were needed.")
+          print("\n".join(changed) if changed else "No plugin overrides were needed.")
           PY
       - name: Analyze
         run: flutter analyze --no-fatal-infos
