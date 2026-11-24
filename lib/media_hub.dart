@@ -309,7 +309,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
             const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد فيديوهات في هذا التصنيف حالياً'))),
           const SliverToBoxAdapter(child: Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 22),
-            child: Text('المقاطع الحالية من NASA Space Place وباللغة الإنجليزية. نضيف المحتوى العربي بعد مراجعة المصدر واللغة وملاءمة العمر.',
+            child: Text('تُحدّث مكتبة الفيديوهات من خادم شغف، ولا يظهر فيها إلا المحتوى الذي اعتمده المشرفون بعد مراجعة المصدر واللغة وملاءمة العمر.',
               textAlign: TextAlign.center, style: TextStyle(color: Colors.black54, fontSize: 12, height: 1.5)),
           )),
         ],
