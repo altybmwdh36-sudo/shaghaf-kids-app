@@ -312,13 +312,14 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout)),
         ],
       ),
-      body: tab == 3 ? const MediaHubScreen() : Column(children: [
+      body: tab == 3 ? MediaHubScreen(initialQuery: query) : Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(14,14,14,8),
-          child: TextField(onChanged: (v) => setState(() => query = v),
+          child: TextField(onSubmitted: (v) { if (v.trim().isNotEmpty) setState(() => tab = 3); }, onChanged: (v) => setState(() => query = v),
             decoration: InputDecoration(hintText: 'ابحث عن موضوع أو معرفة...',
               prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none)))),
+        if (query.trim().isNotEmpty) Padding(padding: const EdgeInsetsDirectional.fromSTEB(14, 0, 14, 8), child: Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => setState(() => tab = 3), icon: const Icon(Icons.travel_explore), label: const Text('ابحث في مكتبة الفيديوهات المتصلة بالإنترنت')))),
         SizedBox(height: 48, child: ListView(scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           children: categories.map((c) => Padding(padding: const EdgeInsets.symmetric(horizontal: 4),
