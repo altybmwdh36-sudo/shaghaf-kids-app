@@ -209,8 +209,10 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                       AspectRatio(
                         aspectRatio: 16 / 9,
                         child: Stack(fit: StackFit.expand, children: [
-                          Image.network(video.thumbnail, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(color: const Color(0xFF102C43), child: const Icon(Icons.public, color: Colors.white, size: 64))),
+                          video.thumbnail.isEmpty
+                              ? Container(color: const Color(0xFF102C43), child: const Icon(Icons.public, color: Colors.white, size: 64))
+                              : Image.network(video.thumbnail, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(color: const Color(0xFF102C43), child: const Icon(Icons.public, color: Colors.white, size: 64))),
                           Container(color: Colors.black.withValues(alpha: 0.16)),
                           const Center(child: CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.play_arrow_rounded, size: 42, color: _green))),
                           Positioned(bottom: 10, right: 10, child: Container(
