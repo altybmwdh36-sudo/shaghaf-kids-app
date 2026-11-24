@@ -84,9 +84,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
                 NavigationDestination(icon: Icon(Icons.video_library_outlined), label: 'الفيديوهات'),
                 NavigationDestination(icon: Icon(Icons.comment_outlined), label: 'التعليقات'),
                 NavigationDestination(icon: Icon(Icons.flag_outlined), label: 'البلاغات'),
+                NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'الإعدادات'),
               ]),
             Expanded(child: IndexedStack(index: tab, children: const [
-              _AdminStats(), _VideoAdmin(), _CommentAdmin(), _ReportAdmin(),
+              _AdminStats(), _VideoAdmin(), _CommentAdmin(), _ReportAdmin(), _SettingsAdmin(),
             ])),
           ])
         : _loginForm(),
@@ -405,4 +406,99 @@ class _CommentAdminState extends State<_CommentAdmin> {
         ],
       )))),
     ]));
+}
+
+
+class _SettingsAdmin extends StatefulWidget {
+  const _SettingsAdmin();
+  @override
+  State<_SettingsAdmin> createState() => _SettingsAdminState();
+}
+
+class _SettingsAdminState extends State<_SettingsAdmin> {
+  final welcome = TextEditingController();
+  final announcement = TextEditingController();
+  bool commentsEnabled = true;
+  bool maintenanceMode = false;
+  bool loading = true;
+  bool saving = false;
+  String? message;
+
+  @override
+  void initState() { super.initState(); load(); }
+
+  @override
+  void dispose() { welcome.dispose(); announcement.dispose(); super.dispose(); }
+
+  Future<void> load() async {
+    setState(() { loading = true; message = null; });
+    try {
+      final rows = await Supabase.instance.client.from('app_settings')
+        .select('key,value');
+      final settings = <String, dynamic>{
+        for (final row in rows) row['key'].toString(): row['value'],
+      };
+      final w = settings['welcome_message'];
+      final a = settings['announcement'];
+      if (w is Map) welcome.text = (w['text'] ?? '').toString();
+      if (a is Map) announcement.text = (a['text'] ?? '').toString();
+      final c = settings['comments_enabled'];
+      final m = settings['maintenance_mode'];
+      if (mounted) setState(() {
+        commentsEnabled = c is Map ? c['enabled'] != false : true;
+        maintenanceMode = m is Map && m['enabled'] == true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => message = 'تعذر تحميل الإعدادات. تحقق من جدول app_settings وصلاحيات المدير.');
+    } finally { if (mounted) setState(() => loading = false); }
+  }
+
+  Future<void> save() async {
+    setState(() { saving = true; message = null; });
+    try {
+      final db = Supabase.instance.client;
+      final actor = db.auth.currentUser?.id;
+      final values = <String, Map<String, dynamic>>{
+        'welcome_message': {'text': welcome.text.trim()},
+        'announcement': {'text': announcement.text.trim()},
+        'comments_enabled': {'enabled': commentsEnabled},
+        'maintenance_mode': {'enabled': maintenanceMode},
+      };
+      for (final entry in values.entries) {
+        await db.from('app_settings').upsert({
+          'key': entry.key, 'value': entry.value, 'updated_by': actor,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
+      if (mounted) setState(() => message = 'تم حفظ إعدادات المنصة في قاعدة البيانات.');
+    } catch (_) {
+      if (mounted) setState(() => message = 'تعذر حفظ الإعدادات. تحقق من صلاحيات قاعدة البيانات.');
+    } finally { if (mounted) setState(() => saving = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
+    const Text('إعدادات المنصة', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const Text('تُحفظ هذه الخيارات مركزيًا، ويجب أن تقرأها واجهات المشتركين لتطبيقها.'),
+    if (loading) const LinearProgressIndicator(),
+    const SizedBox(height: 12),
+    TextField(controller: welcome, decoration: const InputDecoration(
+      labelText: 'رسالة الترحيب', border: OutlineInputBorder())),
+    const SizedBox(height: 12),
+    TextField(controller: announcement, maxLines: 3, decoration: const InputDecoration(
+      labelText: 'إعلان أو تنبيه عام', border: OutlineInputBorder())),
+    SwitchListTile(title: const Text('السماح بالتعليقات افتراضيًا'),
+      value: commentsEnabled, onChanged: (v) => setState(() => commentsEnabled = v)),
+    SwitchListTile(title: const Text('وضع الصيانة'),
+      subtitle: const Text('مفتاح إعداد إداري؛ يلزم أن تتحقق واجهة المشتركين منه قبل تفعيله فعليًا.'),
+      value: maintenanceMode, onChanged: (v) => setState(() => maintenanceMode = v)),
+    if (message != null) Padding(padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(message!, style: TextStyle(color: message!.startsWith('تم') ? _green : Colors.red))),
+    FilledButton.icon(onPressed: saving || loading ? null : save,
+      icon: const Icon(Icons.save_outlined), label: Text(saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات')),
+    const SizedBox(height: 8),
+    OutlinedButton.icon(onPressed: loading ? null : load,
+      icon: const Icon(Icons.refresh), label: const Text('إعادة تحميل الإعدادات')),
+  ]);
 }
