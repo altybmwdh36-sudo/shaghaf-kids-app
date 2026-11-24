@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'backend.dart';
 import 'media_hub.dart';
 import 'admin_console.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeShaghafBackend();
   runApp(const ShaghafApp());
 }
 
