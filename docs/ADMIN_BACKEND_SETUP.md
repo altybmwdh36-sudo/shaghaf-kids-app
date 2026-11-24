@@ -6,10 +6,8 @@ This branch now contains the first Supabase-backed administration console and SQ
 1. Create a Supabase project owned by the Shaghaf operator.
 2. Run `supabase/schema.sql` in the Supabase SQL editor.
 3. Create the first administrator through Supabase Auth (email/password), then insert that user's UUID into `public.profiles` with role `admin` as shown at the end of the SQL file.
-4. Add the Supabase project URL and public anon/publishable key to the Android build as Dart defines:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-5. Build with: `flutter build apk --release --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+4. In GitHub open **Settings → Secrets and variables → Actions**, then create repository secrets named `SUPABASE_URL` and `SUPABASE_ANON_KEY` using the project's URL and public anon/publishable key. The workflow passes these values to the APK build automatically.
+5. For a local build use: `flutter build apk --release --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
 
 Only the public anon key belongs in the app. Never add the Supabase service_role key or admin password to the APK or repository.
 
