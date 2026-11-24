@@ -11,9 +11,13 @@ create table if not exists public.subscribers (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid unique references auth.users(id) on delete set null,
   display_name text not null,
+  phone text,
   created_at timestamptz not null default now(),
   last_seen_at timestamptz
 );
+
+alter table public.subscribers add column if not exists phone text;
+create unique index if not exists subscribers_phone_unique on public.subscribers(phone) where phone is not null;
 
 create table if not exists public.videos (
   id uuid primary key default gen_random_uuid(),
