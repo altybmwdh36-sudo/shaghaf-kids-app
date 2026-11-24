@@ -84,7 +84,7 @@ create table if not exists public.admin_audit_log (
 
 create or replace function public.is_shaghaf_admin()
 returns boolean language sql stable security definer set search_path = public
-as $$ select exists (select 1 from public.profiles where id = auth.uid() and role in ('admin','moderator')) $$;
+as $$ select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') $$;
 
 alter table public.profiles enable row level security;
 alter table public.subscribers enable row level security;
