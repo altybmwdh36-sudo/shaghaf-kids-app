@@ -29,27 +29,26 @@ jobs:
           s = s.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 36")
           p.write_text(s)
 
-          # Apply the required compile SDK to Android library plugins too.
-          root = Path("android/build.gradle")
-          if root.exists():
-              gradle = root.read_text()
-              gradle += """
-
-          subprojects {
-              afterEvaluate { subproject ->
-                  def androidExtension = subproject.extensions.findByName("android")
-                  if (androidExtension != null) {
-                      androidExtension.compileSdkVersion(36)
-                  }
-              }
-          }
-          """
-              root.write_text(gradle)
           PY
       - name: Allow network media playback
         run: sed -i '/<application/i\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
       - name: Get dependencies
         run: flutter pub get
+      - name: Set Android plugin compile SDK to 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          cache = Path.home() / ".pub-cache" / "hosted" / "pub.dev"
+          for plugin_gradle in cache.glob("*/android/build.gradle*"):
+              source = plugin_gradle.read_text()
+              updated = source.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36")
+              updated = updated.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 36")
+              updated = updated.replace("compileSdk = 34", "compileSdk = 36")
+              updated = updated.replace("compileSdkVersion 34", "compileSdkVersion 36")
+              if updated != source:
+                  plugin_gradle.write_text(updated)
+                  print(f"Updated {plugin_gradle}")
+          PY
       - name: Analyze
         run: flutter analyze --no-fatal-infos
       - name: Build APK
