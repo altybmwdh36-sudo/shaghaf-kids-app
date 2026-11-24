@@ -39,7 +39,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
     setState(() { busy = true; error = null; });
     try {
       if (!supabaseInitialized) {
-        await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+        await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseAnonKey);
         supabaseInitialized = true;
       }
       final client = Supabase.instance.client;
@@ -229,7 +229,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       if (bytes != null) {
         final path = '${DateTime.now().millisecondsSinceEpoch}_${fileName ?? 'video.mp4'}';
         await db.storage.from('shaghaf-videos').uploadBinary(path, bytes!,
-          fileOptions: const FileOptions(contentType: 'video/mp4'));
+          fileOptions: FileOptions(contentType: 'video/mp4'));
         videoUrl = db.storage.from('shaghaf-videos').getPublicUrl(path);
       }
       await db.from('videos').insert({
