@@ -143,14 +143,15 @@ class _AdminStatsState extends State<_AdminStats> {
       final videos = (await db.from('videos').select('id')).length;
       final comments = (await db.from('comments').select('id')).length;
       final pending = (await db.from('comments').select('id').eq('status', 'pending')).length;
-      final now = DateTime.now().toUtc();
-      final today = DateTime.utc(now.year, now.month, now.day);
-      final weekStart = today.subtract(Duration(days: today.weekday - 1));
-      final monthStart = DateTime.utc(now.year, now.month, 1);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day).toUtc();
+      final weekStart = DateTime(now.year, now.month, now.day - now.weekday + 1).toUtc();
+      final monthStart = DateTime(now.year, now.month, 1).toUtc();
+      final activeSince = DateTime.now().toUtc().subtract(const Duration(days: 30));
       final newToday = (await db.from('subscribers').select('id').gte('created_at', today.toIso8601String())).length;
       final newWeek = (await db.from('subscribers').select('id').gte('created_at', weekStart.toIso8601String())).length;
       final newMonth = (await db.from('subscribers').select('id').gte('created_at', monthStart.toIso8601String())).length;
-      final active = (await db.from('subscribers').select('id').gte('last_seen_at', now.subtract(const Duration(days: 30)).toIso8601String())).length;
+      final active = (await db.from('subscribers').select('id').gte('last_seen_at', activeSince.toIso8601String())).length;
       if (mounted) setState(() => counts = {'إجمالي المشتركين': members, 'مشتركون جدد اليوم': newToday, 'مشتركون جدد هذا الأسبوع': newWeek, 'مشتركون جدد هذا الشهر': newMonth, 'نشطون خلال 30 يومًا': active, 'الفيديوهات': videos, 'التعليقات': comments, 'تعليقات قيد المراجعة': pending});
     } catch (_) { if (mounted) setState(() => error = 'تعذر تحميل الإحصائيات. تحقق من الجداول وصلاحيات قاعدة البيانات.'); }
     finally { if (mounted) setState(() => loading = false); }
