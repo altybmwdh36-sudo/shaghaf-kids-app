@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'media_hub.dart';
+import 'admin_console.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -301,8 +302,13 @@ class _HomeScreenState extends State<HomeScreen> {
           const Text('✦ شَغَف ✦', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Color(0xFFFFE3A1))),
           Text('أهلاً ${widget.memberName}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white70)),
         ]),
-        actions: [IconButton(tooltip: 'تسجيل الخروج', onPressed: widget.onLogout,
-          icon: const Icon(Icons.logout))],
+        actions: [
+          IconButton(tooltip: 'لوحة الإدارة', onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const AdminConsoleScreen())),
+            icon: const Icon(Icons.admin_panel_settings_outlined)),
+          IconButton(tooltip: 'تسجيل الخروج', onPressed: widget.onLogout,
+            icon: const Icon(Icons.logout)),
+        ],
       ),
       body: tab == 3 ? const MediaHubScreen() : Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(14,14,14,8),
