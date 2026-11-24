@@ -201,9 +201,19 @@ class _VideoAdminState extends State<_VideoAdmin> {
 
   Future<void> loadVideos() async {
     try {
-      final rows = await Supabase.instance.client.from('videos')
+      final db = Supabase.instance.client;
+      final rows = await db.from('videos')
         .select('id,title,status,created_at').order('created_at', ascending: false).limit(100);
-      if (mounted) setState(() => existingVideos = List<Map<String, dynamic>>.from(rows));
+      final enriched = <Map<String, dynamic>>[];
+      for (final raw in rows) {
+        final video = Map<String, dynamic>.from(raw);
+        final views = await db.from('video_views').select('id').eq('video_id', video['id']);
+        final likes = await db.from('video_likes').select('user_id').eq('video_id', video['id']);
+        video['views_count'] = views.length;
+        video['likes_count'] = likes.length;
+        enriched.add(video);
+      }
+      if (mounted) setState(() => existingVideos = enriched);
     } catch (_) { if (mounted) setState(() => message = 'تعذر تحميل قائمة الفيديوهات.'); }
   }
 
@@ -290,7 +300,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
     if (existingVideos.isEmpty) const Padding(padding: EdgeInsets.all(12), child: Text('لا توجد فيديوهات مسجلة بعد.')),
     ...existingVideos.map((video) => Card(child: ListTile(
       title: Text(video['title']?.toString() ?? ''),
-      subtitle: Text('الحالة الحالية: ${video['status']}'),
+      subtitle: Text('الحالة: ${video['status']}  •  المشاهدات: ${video['views_count'] ?? 0}  •  الإعجابات: ${video['likes_count'] ?? 0}'),
       trailing: PopupMenuButton<String>(
         onSelected: (action) {
           if (action == 'delete') { deleteVideo(video); }
