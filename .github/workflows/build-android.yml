@@ -17,6 +17,8 @@ jobs:
           channel: stable
       - name: Generate Android platform files
         run: flutter create --platforms=android --project-name=shaghaf_kids_app .
+      - name: Allow network media playback
+        run: sed -i '/<application/i\\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
       - name: Get dependencies
         run: flutter pub get
       - name: Analyze

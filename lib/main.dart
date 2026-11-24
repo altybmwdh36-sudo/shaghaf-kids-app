@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'media_hub.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -272,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [IconButton(tooltip: 'تسجيل الخروج', onPressed: widget.onLogout,
           icon: const Icon(Icons.logout))],
       ),
-      body: Column(children: [
+      body: tab == 3 ? const MediaHubScreen() : Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(14,14,14,8),
           child: TextField(onChanged: (v) => setState(() => query = v),
             decoration: InputDecoration(hintText: 'ابحث عن موضوع أو معرفة...',
@@ -310,6 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'الرئيسية'),
           NavigationDestination(icon: Icon(Icons.favorite_border), label: 'المفضلة'),
           NavigationDestination(icon: Icon(Icons.history), label: 'السجل'),
+          NavigationDestination(icon: Icon(Icons.play_circle_outline), label: 'الوسائط'),
         ]),
     ),
   );
