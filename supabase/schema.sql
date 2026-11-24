@@ -144,3 +144,43 @@ using (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
 -- After creating the first administrator through Supabase Auth, grant the role:
 -- insert into public.profiles(id, role) values ('AUTH-USER-UUID-HERE', 'admin');
 -- Never put a service_role key or administrator password in the mobile application.
+
+
+-- Online search endpoint: searches only published and moderated videos.
+-- SECURITY INVOKER keeps the caller's RLS policies in force.
+create or replace function public.search_published_videos(
+  p_query text default '',
+  p_category text default null,
+  p_limit integer default 30,
+  p_offset integer default 0
+)
+returns table (
+  id uuid,
+  title text,
+  description text,
+  category text,
+  language text,
+  video_url text,
+  created_at timestamptz
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select v.id, v.title, v.description, v.category, v.language, v.video_url, v.created_at
+  from public.videos v
+  where v.status = 'published'
+    and (p_category is null or v.category = p_category)
+    and (
+      coalesce(trim(p_query), '') = ''
+      or v.title ilike '%' || trim(p_query) || '%'
+      or v.description ilike '%' || trim(p_query) || '%'
+      or v.category ilike '%' || trim(p_query) || '%'
+    )
+  order by v.created_at desc
+  limit greatest(1, least(coalesce(p_limit, 30), 50))
+  offset greatest(coalesce(p_offset, 0), 0);
+$$;
+
+grant execute on function public.search_published_videos(text, text, integer, integer) to anon, authenticated;
