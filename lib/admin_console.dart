@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend.dart';
@@ -182,8 +179,6 @@ class _VideoAdminState extends State<_VideoAdmin> {
   final sourceUrl = TextEditingController();
   String language = 'العربية';
   String status = 'pending';
-  Uint8List? bytes;
-  String? fileName;
   bool busy = false;
   String? message;
   List<Map<String, dynamic>> existingVideos = [];
@@ -226,42 +221,33 @@ class _VideoAdminState extends State<_VideoAdmin> {
     } catch (_) { if (mounted) setState(() => message = 'تعذر حذف الفيديو.'); }
   }
 
-  Future<void> pickVideo() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.video, withData: true);
-    if (result != null && result.files.single.bytes != null) {
-      setState(() { bytes = result.files.single.bytes; fileName = result.files.single.name; });
-    }
-  }
-
   Future<void> publish() async {
-    if (title.text.trim().isEmpty || (bytes == null && sourceUrl.text.trim().isEmpty)) {
-      setState(() => message = 'أدخل عنوان الفيديو واختر ملفًا أو رابطًا للفيديو.');
+    final source = sourceUrl.text.trim();
+    final uri = Uri.tryParse(source);
+    final extension = uri?.path.toLowerCase().split('.').last ?? '';
+    if (title.text.trim().isEmpty || uri == null || uri.scheme != 'https' ||
+        !const {'mp4', 'm4v', 'mov', 'webm', 'm3u8'}.contains(extension)) {
+      setState(() => message = 'أدخل عنوان الفيديو ورابط HTTPS مباشرًا لملف MP4 أو M4V أو MOV أو WEBM أو HLS. روابط صفحات يوتيوب لا تعمل في المشغّل الحالي.');
       return;
     }
     setState(() { busy = true; message = null; });
     try {
       final db = Supabase.instance.client;
-      String? videoUrl = sourceUrl.text.trim().isEmpty ? null : sourceUrl.text.trim();
-      if (bytes != null) {
-        final path = '${DateTime.now().millisecondsSinceEpoch}_${fileName ?? 'video.mp4'}';
-        await db.storage.from('shaghaf-videos').uploadBinary(path, bytes!,
-          fileOptions: FileOptions(contentType: 'video/mp4'));
-        videoUrl = db.storage.from('shaghaf-videos').getPublicUrl(path);
-      }
       await db.from('videos').insert({
         'title': title.text.trim(), 'description': description.text.trim(),
         'category': category.text.trim(), 'language': language,
-        'video_url': videoUrl, 'status': status,
+        'video_url': source, 'status': status,
         'allow_comments': true, 'created_by': db.auth.currentUser!.id,
       });
       title.clear(); description.clear(); sourceUrl.clear();
-      setState(() { bytes = null; fileName = null; message = 'تم حفظ الفيديو في قاعدة البيانات.'; });
+      setState(() => message = 'تم حفظ رابط الفيديو في قاعدة البيانات.');
       await loadVideos();
-    } catch (e) {
-      setState(() => message = 'تعذر نشر الفيديو. تحقق من إعداد التخزين والصلاحيات.');
-    } finally { if (mounted) setState(() => busy = false); }
+    } catch (_) {
+      if (mounted) setState(() => message = 'تعذر حفظ الفيديو. تحقق من إعداد قاعدة البيانات وصلاحيات المدير.');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
-
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
     const Text('نشر فيديو جديد', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
@@ -280,15 +266,14 @@ class _VideoAdminState extends State<_VideoAdmin> {
       items: const [DropdownMenuItem(value: 'pending', child: Text('قيد المراجعة')), DropdownMenuItem(value: 'draft', child: Text('مسودة')), DropdownMenuItem(value: 'published', child: Text('نشر مباشر'))],
       onChanged: (v) { if (v != null) setState(() => status = v); }),
     const SizedBox(height: 10),
-    OutlinedButton.icon(onPressed: pickVideo, icon: const Icon(Icons.video_file), label: Text(fileName ?? 'اختيار ملف فيديو')),
-    const Center(child: Text('أو أدخل رابط فيديو موثوق')),
+    const Center(child: Text('أدخل رابط HTTPS مباشرًا لملف MP4 أو HLS؛ روابط صفحات يوتيوب لا تعمل في المشغّل الحالي')),
     TextField(controller: sourceUrl, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'رابط الفيديو', border: OutlineInputBorder())),
     if (message != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(message!)),
     const SizedBox(height: 14),
     FilledButton.icon(onPressed: busy ? null : publish, icon: const Icon(Icons.publish),
       label: Text(busy ? 'جارٍ الحفظ...' : 'حفظ ونشر الفيديو')),
     const SizedBox(height: 8),
-    const Text('الملفات ترفع إلى التخزين المركزي، وتظهر المواد ذات حالة «منشور» بعد ربط واجهة المشتركين بالمكتبة المركزية.',
+    const Text('تُحفظ روابط الفيديو في قاعدة شغف، ولا تظهر للمشتركين إلا بعد اعتمادها ونشرها من المدير.',
       style: TextStyle(fontSize: 12, color: Colors.black54)),
     const Divider(height: 32),
     const Text('الفيديوهات المسجلة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
