@@ -58,8 +58,28 @@ class _ShaghafAppState extends State<ShaghafApp> {
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B5B46)),
       scaffoldBackgroundColor: const Color(0xFFF5F8F6),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(fontSize: 17, height: 1.45),
+        bodyMedium: TextStyle(fontSize: 16, height: 1.4),
+        bodySmall: TextStyle(fontSize: 14, height: 1.35),
+        titleLarge: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+        labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0B3B2E), foregroundColor: Colors.white),
+        backgroundColor: Color(0xFF0B3B2E), foregroundColor: Colors.white,
+        centerTitle: false, toolbarHeight: 76,
+        titleTextStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.2)),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 76,
+        backgroundColor: Colors.white,
+        indicatorColor: const Color(0xFFDCEFE6),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+          fontSize: 14, fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
+          color: states.contains(WidgetState.selected) ? const Color(0xFF0B5B46) : const Color(0xFF68756F))),
+        iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+          size: 26, color: states.contains(WidgetState.selected) ? const Color(0xFF0B5B46) : const Color(0xFF68756F))),
+      ),
     ),
     home: loading
       ? const Scaffold(body: Center(child: CircularProgressIndicator()))
@@ -113,10 +133,18 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            const Icon(Icons.auto_stories_rounded, size: 76, color: Color(0xFF0B5B46)),
-            const SizedBox(height: 14),
-            const Text('أهلاً بك في شَغَف', textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            Container(width: 112, height: 112,
+              decoration: BoxDecoration(shape: BoxShape.circle,
+                gradient: const LinearGradient(colors: [Color(0xFF0B3B2E), Color(0xFF168568)]),
+                boxShadow: [BoxShadow(color: const Color(0xFF0B5B46).withValues(alpha: .22), blurRadius: 22, offset: const Offset(0, 8))],
+                border: Border.all(color: const Color(0xFFD6B66B), width: 2)),
+              child: const Icon(Icons.auto_stories_rounded, size: 58, color: Colors.white)),
+            const SizedBox(height: 16),
+            const Text('✦ شَغَف ✦', textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: 2, color: Color(0xFF0B5B46))),
+            const SizedBox(height: 5),
+            const Text('المعرفة تبدأ بشغف', textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFFB18A3B))),
             const SizedBox(height: 8),
             const Text('مساحة للمعرفة والتعلّم والإبداع والترفيه الهادف',
               textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
@@ -266,9 +294,12 @@ class _HomeScreenState extends State<HomeScreen> {
     textDirection: TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
+        flexibleSpace: Container(decoration: const BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.centerRight, end: Alignment.centerLeft,
+            colors: [Color(0xFF082F25), Color(0xFF0B5B46), Color(0xFF14775D)]))),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('شَغَف', style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(widget.memberName, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          const Text('✦ شَغَف ✦', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Color(0xFFFFE3A1))),
+          Text('أهلاً ${widget.memberName}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white70)),
         ]),
         actions: [IconButton(tooltip: 'تسجيل الخروج', onPressed: widget.onLogout,
           icon: const Icon(Icons.logout))],
@@ -291,13 +322,15 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (ctx, i) {
               final item = visibleItems[i];
               final fav = favorites.contains(item.title);
-              return Card(margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(contentPadding: const EdgeInsets.all(14),
+              return Card(elevation: 1.5, margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                   leading: CircleAvatar(backgroundColor: const Color(0xFFE2F0E9),
                     child: Icon(item.icon, color: const Color(0xFF0B5B46))),
-                  title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Padding(padding: const EdgeInsets.only(top: 5),
-                    child: Text(item.category + ' • ' + item.description)),
+                  title: Text(item.title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xFF173D31))),
+                  subtitle: Padding(padding: const EdgeInsets.only(top: 7),
+                    child: Text(item.category + ' • ' + item.description,
+                      style: const TextStyle(fontSize: 15, height: 1.45))),
                   trailing: IconButton(onPressed: () => setState(() {
                     if (fav) { favorites.remove(item.title); } else { favorites.add(item.title); }
                   }), icon: Icon(fav ? Icons.favorite : Icons.favorite_border,
@@ -305,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => openItem(item)));
             })),
       ]),
-      bottomNavigationBar: NavigationBar(selectedIndex: tab,
+      bottomNavigationBar: NavigationBar(labelBehavior: NavigationDestinationLabelBehavior.alwaysShow, selectedIndex: tab,
         onDestinationSelected: (v) => setState(() => tab = v),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: 'الرئيسية'),
