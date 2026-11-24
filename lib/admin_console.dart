@@ -3,11 +3,9 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'backend.dart';
 
 const _green = Color(0xFF0B5B46);
-const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-bool get _backendConfigured => _supabaseUrl.isNotEmpty && _supabaseAnonKey.isNotEmpty;
 
 class AdminConsoleScreen extends StatefulWidget {
   const AdminConsoleScreen({super.key});
@@ -20,7 +18,6 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
   final password = TextEditingController();
   bool busy = false;
   bool authorized = false;
-  static bool supabaseInitialized = false;
   String? error;
   int tab = 0;
 
@@ -32,16 +29,14 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
   }
 
   Future<void> signIn() async {
-    if (!_backendConfigured) {
-      setState(() => error = 'لم يتم إعداد اتصال قاعدة البيانات بعد. يلزم إدخال مفاتيح المشروع في إعدادات البناء.');
+    if (!shaghafBackendConfigured) {
+      setState(() => error = 'لم يتم إعداد اتصال قاعدة البيانات بعد. يلزم إعداد مفاتيح المشروع في إعدادات البناء.');
       return;
     }
     setState(() { busy = true; error = null; });
     try {
-      if (!supabaseInitialized) {
-        await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseAnonKey);
-        supabaseInitialized = true;
-      }
+      final ready = await initializeShaghafBackend();
+      if (!ready) throw const AuthException('تعذر تهيئة الاتصال بقاعدة البيانات.');
       final client = Supabase.instance.client;
       await client.auth.signInWithPassword(email: email.text.trim(), password: password.text);
       final profile = await client.from('profiles').select('role').eq('id', client.auth.currentUser!.id).maybeSingle();
@@ -62,7 +57,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
   }
 
   Future<void> signOut() async {
-    if (_backendConfigured) await Supabase.instance.client.auth.signOut();
+    if (shaghafBackendReady) await Supabase.instance.client.auth.signOut();
     if (mounted) setState(() => authorized = false);
   }
 
