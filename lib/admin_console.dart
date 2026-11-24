@@ -20,6 +20,7 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
   final password = TextEditingController();
   bool busy = false;
   bool authorized = false;
+  static bool supabaseInitialized = false;
   String? error;
   int tab = 0;
 
@@ -37,7 +38,10 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
     }
     setState(() { busy = true; error = null; });
     try {
-      await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+      if (!supabaseInitialized) {
+        await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+        supabaseInitialized = true;
+      }
       final client = Supabase.instance.client;
       await client.auth.signInWithPassword(email: email.text.trim(), password: password.text);
       final profile = await client.from('profiles').select('role').eq('id', client.auth.currentUser!.id).maybeSingle();
