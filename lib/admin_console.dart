@@ -266,7 +266,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
     if (message != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(message!)),
     const SizedBox(height: 14),
     FilledButton.icon(onPressed: busy ? null : publish, icon: const Icon(Icons.publish),
-      label: Text(busy ? 'جارٍ الحفظ...' : 'حفظ ونشر الفيديو')),
+      label: Text(busy ? 'جارٍ الإرسال...' : 'إرسال الفيديو للمراجعة')),
     const SizedBox(height: 8),
     const Text('تُحفظ روابط الفيديو في قاعدة شغف، ولا تظهر للمشتركين إلا بعد اعتمادها ونشرها من المدير.',
       style: TextStyle(fontSize: 12, color: Colors.black54)),
