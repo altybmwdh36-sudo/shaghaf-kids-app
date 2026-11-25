@@ -1,22 +1,49 @@
-# Shaghaf admin backend setup
+# إعداد خادم شَغَف ولوحة الإدارة
 
-This branch now contains the first Supabase-backed administration console and SQL schema.
+## إعداد Supabase الأساسي
+1. افتح مشروع Supabase الخاص بشَغَف.
+2. نفّذ ملف `supabase/schema.sql` في SQL Editor مرة واحدة، أو نفّذ فقط التعديلات الجديدة الموثقة إذا كانت الجداول موجودة مسبقاً.
+3. أنشئ حساب المدير من Supabase Auth، ثم امنحه دور المدير بإضافة UUID إلى `public.profiles` كما هو موضح في نهاية ملف SQL.
+4. في GitHub افتح **Settings → Secrets and variables → Actions** وأضف:
+   - `SUPABASE_ANON_KEY`: المفتاح العام publishable/anon فقط.
+   - لا تضع مفتاح `service_role` في GitHub الخاص ببناء التطبيق أو داخل APK.
+5. رابط المشروع مثبت في `lib/backend.dart`. بناء التطبيق يستخدم المفتاح العام عبر `--dart-define=SUPABASE_ANON_KEY=...`.
 
-## Required owner setup
-1. Create a Supabase project owned by the Shaghaf operator.
-2. Run `supabase/schema.sql` in the Supabase SQL editor.
-3. Create the first administrator through Supabase Auth (email/password), then insert that user's UUID into `public.profiles` with role `admin` as shown at the end of the SQL file.
-4. In GitHub open **Settings → Secrets and variables → Actions**, then create repository secrets named `SUPABASE_URL` and `SUPABASE_ANON_KEY` using the project's URL and public anon/publishable key. The workflow passes these values to the APK build automatically.
-5. For a local build use: `flutter build apk --release --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+## محرك اكتشاف الفيديوهات (مرحلة أولى)
+أضيفت Supabase Edge Function باسم `discover-videos` للبحث في مكتبة NASA الرسمية عن فيديوهات تعليمية في الفضاء والعلوم والطبيعة والتقنية.
+- لا تقبل الوظيفة إلا جلسة مستخدم موثقة لها دور `admin`.
+- تستخدم مفتاح الخدمة داخل بيئة Edge Function فقط، ولا ترسله إلى التطبيق.
+- تقبل روابط فيديو MP4 من نطاق أصول NASA فقط.
+- تمنع إدراج الرابط المكرر.
+- **كل نتيجة تحفظ بالحالة pending ولا تنشر تلقائياً**. يجب أن يراجع المدير العنوان والوصف والمصدر والفيديو نفسه ثم ينشره يدوياً.
+- هذا تكامل أولي مع مصدر موثوق واحد؛ لا يمثل بعد محرك تعدد مصادر أو فحص ذكاء اصطناعي شامل.
 
-Only the public anon key belongs in the app. Never add the Supabase service_role key or admin password to the APK or repository.
+### نشر الوظيفة
+من جهاز عليه Supabase CLI، بعد تسجيل الدخول وربط المشروع الصحيح:
+```bash
+supabase link --project-ref xdkrvwjkaazaybppxtzc
+supabase functions deploy discover-videos
+```
+لا حاجة لإضافة مفتاح الخدمة يدوياً إذا كانت أسرار Supabase الافتراضية متاحة للوظائف في مشروعك. إذا لم تكن متاحة، أضفها في **Edge Functions → Secrets** من لوحة Supabase، ولا ترسلها في المحادثة.
 
-## Current implementation boundary
-- Admin sign-in checks the authenticated user's database role; the role check is enforced again by PostgreSQL RLS.
-- Admin dashboard reads subscriber/video/comment totals.
-- Admin can upload a video file to Storage or register a trusted video URL, and set draft/pending/published status.
-- Admin can approve or reject comments.
-- Existing subscriber sign-up in the app is still device-local. Central subscriber registration, unique phone handling, daily/weekly/monthly metrics, user comments/likes/views, and the member video feed require the next integration step and a protected server-side signup endpoint. Do not treat local signups as central totals.
-- The public app video list is still the current static list until the feed is switched to read published rows from `videos`.
+### تشغيل البحث
+يُستدعى endpoint:
+```
+POST https://xdkrvwjkaazaybppxtzc.supabase.co/functions/v1/discover-videos
+Authorization: Bearer <جلسة المدير>
+apikey: <المفتاح العام>
+Content-Type: application/json
 
-The database schema uses row-level security. Review policies and applicable child privacy/consent obligations before production launch.
+{"categories":["الفضاء","العلوم"]}
+```
+يمكن حذف `categories` للبحث في جميع الأقسام الأربعة. هذه الوظيفة تجهز مرشحين للمراجعة فقط ولا تنفذ فحصاً آلياً للمحتوى المرئي أو الصوتي.
+
+## حدود النسخة الحالية
+- تطبيق Flutter يقرأ من RPC `search_published_videos` ولا يعرض إلا الصفوف المنشورة.
+- الفيديوهات المكتشفة حديثاً لا تظهر للمشتركين قبل مراجعة المدير وتغيير حالتها إلى `published`.
+- تشغيل الفيديو يتطلب رابط MP4/HLS مباشر مدعوماً؛ روابط صفحات YouTube ليست روابط تشغيل مباشرة في المشغل الحالي.
+- نجاح بناء APK واختبارات Flutter لا يغني عن تجربة التسجيل والمشاهدة على هاتف حقيقي.
+- لم يُفعّل بعد محرك الذكاء الاصطناعي لمراجعة الصوت والصورة، ولا مصادر فيديو متعددة. لا يجوز اعتبار نتيجة البحث موافقة سلامة تلقائية.
+
+## مفاتيح وأمان
+لا تضع كلمة مرور المدير أو مفتاح Supabase `service_role` أو مفاتيح مزودي الذكاء الاصطناعي داخل تطبيق الهاتف أو ملفات المستودع. إذا سبق نشر مفتاح سري في محادثة أو مستودع، فقم بتدويره فوراً.
