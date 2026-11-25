@@ -1,4 +1,4 @@
-// Discover NASA-hosted educational video candidates for Shaghaf.
+// Discover educational video candidates from NASA and Wikimedia Commons for Shaghaf.
 // Every imported item is inserted as "pending". Nothing is published automatically.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
