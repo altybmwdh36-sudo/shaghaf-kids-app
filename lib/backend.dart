@@ -1,10 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+// This project URL is fixed here so it cannot be confused with the API key.
+const _supabaseUrl = 'https://xdkrvwjkaazaybppxtzc.supabase.co';
 const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-bool get shaghafBackendConfigured =>
-    _supabaseUrl.isNotEmpty && _supabaseAnonKey.isNotEmpty;
+bool get shaghafBackendConfigured => _supabaseAnonKey.isNotEmpty;
 
 bool shaghafBackendReady = false;
 bool _initializing = false;
