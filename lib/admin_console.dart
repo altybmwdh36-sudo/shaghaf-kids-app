@@ -175,6 +175,8 @@ class _VideoAdminState extends State<_VideoAdmin> {
   final description = TextEditingController();
   final category = TextEditingController(text: 'العلوم والفضاء');
   final sourceUrl = TextEditingController();
+  final discoveryTopic = TextEditingController();
+  final Set<String> discoveryCategories = {'التعليم والمعرفة', 'العلوم والاكتشاف'};
   String language = 'العربية';
   bool busy = false;
   bool discovering = false;
@@ -185,7 +187,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
   void initState() { super.initState(); loadVideos(); }
 
   @override
-  void dispose() { title.dispose(); description.dispose(); category.dispose(); sourceUrl.dispose(); super.dispose(); }
+  void dispose() { title.dispose(); description.dispose(); category.dispose(); sourceUrl.dispose(); discoveryTopic.dispose(); super.dispose(); }
 
   Future<void> loadVideos() async {
     try {
@@ -261,24 +263,33 @@ class _VideoAdminState extends State<_VideoAdmin> {
     } catch (_) { if (mounted) setState(() => message = 'تعذر حذف الفيديو.'); }
   }
 
-  Future<void> discoverNasaVideos() async {
+  Future<void> discoverVideos() async {
+    if (discoveryCategories.isEmpty && discoveryTopic.text.trim().isEmpty) {
+      setState(() => message = 'اختر قسماً أو اكتب موضوعاً مخصصاً للبحث.');
+      return;
+    }
     setState(() { discovering = true; message = null; });
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'discover-videos',
-        body: {'categories': ['الفضاء', 'العلوم', 'الطبيعة', 'التقنية']},
+        body: {
+          'categories': discoveryCategories.toList(),
+          'topic': discoveryTopic.text.trim(),
+          'max_per_section': 8,
+        },
       );
       if (response.status < 200 || response.status >= 300) {
         throw Exception('HTTP ${response.status}');
       }
       final data = Map<String, dynamic>.from(response.data as Map);
       final count = data['imported_count'] ?? 0;
+      final skipped = data['skipped_count'] ?? 0;
       if (mounted) setState(() => message =
-        'اكتمل البحث في NASA وWikimedia Commons. أضيف $count مقطعاً إلى قائمة المراجعة فقط؛ لن يظهر أي مقطع للمشتركين قبل فحصه ونشره.');
+        'انتهى البحث في المصادر المتاحة. أضيف $count مقطعاً إلى قائمة المراجعة، وتعذر إدراج $skipped مرشحاً. لا يُنشر أي فيديو تلقائياً.');
       await loadVideos();
     } catch (_) {
       if (mounted) setState(() => message =
-        'تعذر جلب المقاطع. تأكد من نشر وظيفة discover-videos وأن حسابك يملك صلاحية المدير.');
+        'تعذر تنفيذ البحث. تأكد من نشر وظيفة discover-videos وأن حسابك يملك صلاحية المدير.');
     } finally {
       if (mounted) setState(() => discovering = false);
     }
@@ -313,15 +324,38 @@ class _VideoAdminState extends State<_VideoAdmin> {
   }
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
-    const Text('اكتشاف مقاطع تعليمية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+    const Text('اكتشاف الفيديوهات حسب محتوى شَغَف', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
-    const Text('ابحث في NASA وWikimedia Commons عن مقاطع في الفضاء والعلوم والطبيعة والتقنية. تُقبل من Commons الملفات ذات بيانات الترخيص المسموح بها فقط، وجميع النتائج تدخل المراجعة ولا تُنشر تلقائياً.', style: TextStyle(color: Colors.black54)),
+    const Text('اختر الأقسام التي تريد إثراءها، أو اكتب موضوعاً خاصاً. يبحث المحرك في أكثر من مكتبة عامة، وتدخل كل النتائج قائمة المراجعة فقط.'),
+    const SizedBox(height: 10),
+    const Text('الأقسام الأساسية', style: TextStyle(fontWeight: FontWeight.bold)),
+    ...[
+      'التعليم والمعرفة', 'التحفيز والدراسة', 'الاختراعات والهندسة',
+      'الدين والأخلاق', 'قصص الأنبياء والصالحين', 'القرآن الكريم',
+      'العلوم والاكتشاف', 'الفكاهة النظيفة', 'الطبيعة والوثائقيات',
+    ].map((name) => CheckboxListTile(
+      dense: true, contentPadding: EdgeInsets.zero,
+      title: Text(name), value: discoveryCategories.contains(name),
+      onChanged: discovering ? null : (checked) => setState(() {
+        if (checked == true) { discoveryCategories.add(name); }
+        else { discoveryCategories.remove(name); }
+      }),
+    )),
+    const SizedBox(height: 8),
+    TextField(controller: discoveryTopic, maxLines: 2,
+      decoration: const InputDecoration(
+        labelText: 'موضوع مخصص يبحث عنه المدير',
+        hintText: 'مثال: قصص النساء في القرآن أو اختراعات العلماء المسلمين',
+        border: OutlineInputBorder(),
+      )),
     const SizedBox(height: 10),
     FilledButton.tonalIcon(
-      onPressed: discovering ? null : discoverNasaVideos,
+      onPressed: discovering ? null : discoverVideos,
       icon: discovering ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-      label: Text(discovering ? 'جارٍ البحث في المصادر...' : 'جلب مقاطع جديدة للمراجعة'),
+      label: Text(discovering ? 'جارٍ البحث في المصادر...' : 'ابحث واجلب المرشحين للمراجعة'),
     ),
+    const Text('المصادر الحالية: Wikimedia Commons وInternet Archive، وNASA للعلوم والفضاء. لا تعني نتائج البحث أو الرخصة أن الفيديو آمن؛ يجب فحصه كاملاً قبل النشر.',
+      style: TextStyle(fontSize: 12, color: Colors.black54)),
     const Divider(height: 30),
     const Text('إضافة فيديو يدوياً', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
     const SizedBox(height: 12),
