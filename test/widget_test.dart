@@ -9,7 +9,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const ShaghafApp());
     await tester.pumpAndSettle();
-    expect(find.text('أهلاً بك في شَغَف'), findsOneWidget);
-    expect(find.text('دخول مجاني'), findsOneWidget);
+    expect(find.text('✦ شَغَف ✦'), findsOneWidget);
+    expect(find.text('إرسال رمز التحقق'), findsOneWidget);
   });
 }
