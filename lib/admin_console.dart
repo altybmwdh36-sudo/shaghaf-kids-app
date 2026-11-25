@@ -176,7 +176,6 @@ class _VideoAdminState extends State<_VideoAdmin> {
   final category = TextEditingController(text: 'العلوم والفضاء');
   final sourceUrl = TextEditingController();
   String language = 'العربية';
-  static const String status = 'pending';
   bool busy = false;
   String? message;
   List<Map<String, dynamic>> existingVideos = [];
@@ -191,16 +190,16 @@ class _VideoAdminState extends State<_VideoAdmin> {
     try {
       final db = Supabase.instance.client;
       final rows = await db.from('videos')
-        .select('id,title,status,created_at').order('created_at', ascending: false).limit(100);
-      final enriched = <Map<String, dynamic>>[];
-      for (final raw in rows) {
+        .select('id,title,status,created_at,video_views(id),video_likes(user_id)')
+        .order('created_at', ascending: false).limit(100);
+      final enriched = rows.map<Map<String, dynamic>>((raw) {
         final video = Map<String, dynamic>.from(raw);
-        final views = await db.from('video_views').select('id').eq('video_id', video['id']);
-        final likes = await db.from('video_likes').select('user_id').eq('video_id', video['id']);
-        video['views_count'] = views.length;
-        video['likes_count'] = likes.length;
-        enriched.add(video);
-      }
+        video['views_count'] = (video['video_views'] as List? ?? const []).length;
+        video['likes_count'] = (video['video_likes'] as List? ?? const []).length;
+        video.remove('video_views');
+        video.remove('video_likes');
+        return video;
+      }).toList();
       if (mounted) setState(() => existingVideos = enriched);
     } catch (_) { if (mounted) setState(() => message = 'تعذر تحميل قائمة الفيديوهات.'); }
   }
