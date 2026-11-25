@@ -71,6 +71,8 @@ jobs:
           PY
       - name: Analyze
         run: flutter analyze --no-fatal-infos
+      - name: Run widget tests
+        run: flutter test
       - name: Build APK
         run: flutter build apk --release --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - name: Upload APK
