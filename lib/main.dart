@@ -245,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 14),
             TextField(controller: destinationController,
-              keyboardType: useEmail ? TextInputType.emailAddress : TextInputType.phone,
+              keyboardType: useEmail ? TextInputType.text : TextInputType.phone,
               textCapitalization: TextCapitalization.none,
               autocorrect: false,
               enableSuggestions: false,
