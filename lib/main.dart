@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend.dart';
 import 'media_hub.dart';
 import 'admin_console.dart';
@@ -18,7 +19,6 @@ class ShaghafApp extends StatefulWidget {
 
 class _ShaghafAppState extends State<ShaghafApp> {
   String? name;
-  String? phone;
   bool loading = true;
 
   @override
@@ -28,29 +28,21 @@ class _ShaghafAppState extends State<ShaghafApp> {
   }
 
   Future<void> _restore() async {
-    final prefs = await SharedPreferences.getInstance();
+    final user = shaghafBackendReady ? Supabase.instance.client.auth.currentUser : null;
     if (!mounted) return;
     setState(() {
-      name = prefs.getString('member_name');
-      phone = prefs.getString('member_phone');
+      name = user?.userMetadata?['display_name'] as String?;
       loading = false;
     });
   }
 
-  Future<void> _login(String newName, String newPhone) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('member_name', newName.trim());
-    await prefs.setString('member_phone', newPhone.trim());
-    if (!mounted) return;
-    setState(() { name = newName.trim(); phone = newPhone.trim(); });
+  Future<void> _login(String verifiedName) async {
+    if (mounted) setState(() => name = verifiedName);
   }
 
   Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('member_name');
-    await prefs.remove('member_phone');
-    if (!mounted) return;
-    setState(() { name = null; phone = null; });
+    if (shaghafBackendReady) await Supabase.instance.client.auth.signOut();
+    if (mounted) setState(() => name = null);
   }
 
   @override
@@ -74,54 +66,116 @@ class _ShaghafAppState extends State<ShaghafApp> {
         centerTitle: false, toolbarHeight: 76,
         titleTextStyle: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.2)),
       navigationBarTheme: NavigationBarThemeData(
-        height: 76,
-        backgroundColor: Colors.white,
+        height: 76, backgroundColor: Colors.white,
         indicatorColor: const Color(0xFFDCEFE6),
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
           fontSize: 14, fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
           color: states.contains(WidgetState.selected) ? const Color(0xFF0B5B46) : const Color(0xFF68756F))),
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
           size: 26, color: states.contains(WidgetState.selected) ? const Color(0xFF0B5B46) : const Color(0xFF68756F))),
-      ),
     ),
     home: loading
       ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-      : name == null
-        ? LoginScreen(onLogin: _login)
-        : HomeScreen(memberName: name!, onLogout: _logout),
+      : name == null ? LoginScreen(onLogin: _login)
+      : HomeScreen(memberName: name!, onLogout: _logout),
   );
 }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.onLogin});
-  final Future<void> Function(String, String) onLogin;
+  final Future<void> Function(String) onLogin;
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   final nameController = TextEditingController();
-  final phoneController = TextEditingController();
+  final destinationController = TextEditingController();
+  final codeController = TextEditingController();
+  bool useEmail = true;
+  bool codeSent = false;
   bool saving = false;
 
   @override
   void dispose() {
     nameController.dispose();
-    phoneController.dispose();
+    destinationController.dispose();
+    codeController.dispose();
     super.dispose();
   }
 
-  Future<void> submit() async {
+  void message(String value) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(value), behavior: SnackBarBehavior.floating));
+  }
+
+  Future<void> sendCode() async {
     final n = nameController.text.trim();
-    final p = phoneController.text.trim();
-    if (n.isEmpty || p.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال الاسم ورقم الهاتف')));
+    final target = destinationController.text.trim();
+    if (!shaghafBackendReady) {
+      message('لم يكتمل إعداد اتصال قاعدة بيانات شَغَف بعد.');
+      return;
+    }
+    if (n.length < 2 || target.isEmpty) {
+      message('يرجى إدخال الاسم ووسيلة التواصل.');
+      return;
+    }
+    if (useEmail && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(target)) {
+      message('يرجى إدخال بريد إلكتروني صحيح.');
+      return;
+    }
+    if (!useEmail && !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(target)) {
+      message('اكتب رقم الهاتف بالصيغة الدولية، مثال: +9677xxxxxxxx');
       return;
     }
     setState(() => saving = true);
     try {
-      await widget.onLogin(n, p);
+      await Supabase.instance.client.auth.signInWithOtp(
+        email: useEmail ? target : null,
+        phone: useEmail ? null : target,
+        shouldCreateUser: true,
+        data: {'display_name': n},
+      );
+      if (mounted) setState(() => codeSent = true);
+      message(useEmail ? 'تم طلب الرمز. افحص بريدك الإلكتروني.' : 'تم طلب رمز التحقق برسالة SMS.');
+    } on AuthException catch (e) {
+      message('تعذر إرسال الرمز: ${e.message}');
+    } catch (_) {
+      message('تعذر إرسال الرمز. تحقق من إعدادات البريد أو SMS في Supabase.');
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  Future<void> verifyCode() async {
+    final n = nameController.text.trim();
+    final target = destinationController.text.trim();
+    final token = codeController.text.trim();
+    if (token.length < 4) {
+      message('أدخل رمز التحقق الذي وصلك.');
+      return;
+    }
+    setState(() => saving = true);
+    try {
+      final client = Supabase.instance.client;
+      await client.auth.verifyOTP(
+        email: useEmail ? target : null,
+        phone: useEmail ? null : target,
+        token: token,
+        type: useEmail ? OtpType.email : OtpType.sms,
+      );
+      await client.rpc('register_shaghaf_subscriber', params: {
+        'p_display_name': n,
+        'p_email': useEmail ? target : null,
+        'p_phone': useEmail ? null : target,
+      });
+      await widget.onLogin(n);
+    } on AuthException catch (e) {
+      message('رمز التحقق غير صحيح أو انتهت صلاحيته: ${e.message}');
+    } on PostgrestException catch (e) {
+      message('تم التحقق لكن تعذر حفظ بيانات الاشتراك: ${e.message}');
+    } catch (_) {
+      message('تعذر إكمال التسجيل. حاول مرة أخرى.');
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -151,20 +205,61 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 8),
             const Text('مساحة للمعرفة والتعلّم والإبداع والترفيه الهادف',
               textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
-            const SizedBox(height: 28),
-            TextField(controller: nameController, textInputAction: TextInputAction.next,
+            const SizedBox(height: 26),
+            TextField(controller: nameController,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'اسم المشترك',
                 prefixIcon: Icon(Icons.person_outline), border: OutlineInputBorder())),
             const SizedBox(height: 14),
-            TextField(controller: phoneController, keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.done, onSubmitted: (_) => submit(),
-              decoration: const InputDecoration(labelText: 'رقم الهاتف',
-                prefixIcon: Icon(Icons.phone_android), border: OutlineInputBorder())),
+            const Text('اختر طريقة استلام رمز التحقق', style: TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment<bool>(value: true, label: Text('البريد الإلكتروني'), icon: Icon(Icons.email_outlined)),
+                ButtonSegment<bool>(value: false, label: Text('رسالة SMS'), icon: Icon(Icons.sms_outlined)),
+              ],
+              selected: {useEmail},
+              onSelectionChanged: saving || codeSent ? null : (value) {
+                setState(() {
+                  useEmail = value.first;
+                  destinationController.clear();
+                  codeController.clear();
+                });
+              },
+            ),
+            const SizedBox(height: 14),
+            TextField(controller: destinationController,
+              keyboardType: useEmail ? TextInputType.emailAddress : TextInputType.phone,
+              textDirection: TextDirection.ltr, textAlign: TextAlign.left,
+              enabled: !codeSent,
+              decoration: InputDecoration(
+                labelText: useEmail ? 'البريد الإلكتروني' : 'رقم الهاتف بالصيغة الدولية',
+                hintText: useEmail ? 'name@example.com' : '+9677xxxxxxxx',
+                prefixIcon: Icon(useEmail ? Icons.email_outlined : Icons.phone_android),
+                border: const OutlineInputBorder())),
+            if (codeSent) ...[
+              const SizedBox(height: 14),
+              TextField(controller: codeController,
+                keyboardType: TextInputType.number,
+                textDirection: TextDirection.ltr, textAlign: TextAlign.center,
+                decoration: const InputDecoration(
+                  labelText: 'رمز التحقق', hintText: 'أدخل الرمز الذي وصلك',
+                  prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder())),
+            ],
             const SizedBox(height: 20),
-            FilledButton(onPressed: saving ? null : submit,
-              child: Text(saving ? 'جارٍ إتمام الاشتراك...' : 'الاشتراك المجاني')),
+            FilledButton(
+              onPressed: saving ? null : (codeSent ? verifyCode : sendCode),
+              child: Text(saving ? 'يرجى الانتظار...' :
+                codeSent ? 'تأكيد الرمز وإكمال الاشتراك' : 'إرسال رمز التحقق')),
+            if (codeSent)
+              TextButton(
+                onPressed: saving ? null : () => setState(() {
+                  codeSent = false;
+                  codeController.clear();
+                }),
+                child: const Text('تغيير وسيلة التحقق أو العنوان')),
             const SizedBox(height: 12),
-            const Text('الاشتراك مجاني بالكامل، دون رمز تفعيل أو رسوم سنوية.\nتُحفظ بيانات الاسم ورقم الهاتف على هذا الجهاز فقط.',
+            const Text('الاشتراك مجاني بالكامل. لا يتم إنشاء الاشتراك إلا بعد نجاح التحقق من البريد الإلكتروني أو الهاتف.',
               textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.black54)),
           ]),
         ),

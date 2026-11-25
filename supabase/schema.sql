@@ -201,3 +201,54 @@ as $$
 $$;
 
 grant execute on function public.search_published_videos(text, text, integer, integer) to anon, authenticated;
+
+-- Store the verified contact selected during Supabase Auth registration.
+alter table public.subscribers add column if not exists email text;
+create unique index if not exists subscribers_email_unique
+  on public.subscribers(lower(email)) where email is not null;
+
+-- This RPC is callable only by an authenticated user and always writes that
+-- user's own subscriber row. The client never receives elevated database keys.
+create or replace function public.register_shaghaf_subscriber(
+  p_display_name text,
+  p_email text default null,
+  p_phone text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+  if length(trim(coalesce(p_display_name, ''))) < 2 then
+    raise exception 'A valid display name is required';
+  end if;
+  if (nullif(trim(p_email), '') is null) = (nullif(trim(p_phone), '') is null) then
+    raise exception 'Provide exactly one verified contact method';
+  end if;
+
+  insert into public.profiles(id, role)
+  values (v_user_id, 'member')
+  on conflict (id) do nothing;
+
+  insert into public.subscribers(auth_user_id, display_name, email, phone)
+  values (
+    v_user_id,
+    trim(p_display_name),
+    case when p_email is null then null else lower(trim(p_email)) end,
+    nullif(trim(p_phone), '')
+  )
+  on conflict (auth_user_id) do update
+    set display_name = excluded.display_name,
+        email = excluded.email,
+        phone = excluded.phone;
+end;
+$$;
+
+revoke all on function public.register_shaghaf_subscriber(text, text, text) from public, anon;
+grant execute on function public.register_shaghaf_subscriber(text, text, text) to authenticated;
