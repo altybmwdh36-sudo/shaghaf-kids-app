@@ -1,0 +1,96 @@
+name: Build Android APK
+
+concurrency:
+  group: shaghaf-android-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
+on:
+  push:
+    branches: [main, repair/flutter-app-structure, restore/main-compatible, repair/shaghaf-release-2026]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generate Android platform files
+        run: flutter create --platforms=android --project-name=shaghaf_kids_app .
+      - name: Set Android compile SDK to 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle")
+          if not p.exists():
+              p = Path("android/app/build.gradle.kts")
+          s = p.read_text()
+          s = s.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36")
+          s = s.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 36")
+          p.write_text(s)
+          PY
+      - name: Allow network media playback
+        run: sed -i '/<application/i\\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Normalize Android plugin compile SDK to 36
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [
+              Path.home() / ".pub-cache" / "hosted" / "pub.dev",
+              Path("android"),
+          ]
+          patterns = [
+              (re.compile(r"(\bcompileSdkVersion\s*[= ]\s*)\d+"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdk\s*=\s*)\d+"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdkVersion\s+)(?:flutter\.compileSdkVersion|\d+)"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdk\s*=\s*)(?:flutter\.compileSdkVersion|\d+)"), r"\g<1>36"),
+          ]
+          changed = []
+          for root in roots:
+              if not root.exists():
+                  continue
+              for gradle in root.rglob("*"):
+                  if gradle.name not in ("build.gradle", "build.gradle.kts"):
+                      continue
+                  try:
+                      source = gradle.read_text()
+                  except (OSError, UnicodeDecodeError):
+                      continue
+                  updated = source
+                  for pattern, replacement in patterns:
+                      updated = pattern.sub(replacement, updated)
+                  if updated != source:
+                      gradle.write_text(updated)
+                      changed.append(str(gradle))
+          print("Updated Gradle compile SDK in:")
+          print("\n".join(changed) if changed else "No plugin overrides were needed.")
+          PY
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos lib/main.dart lib/backend.dart lib/device_guard.dart lib/media_hub.dart lib/admin_console.dart
+      - name: Run widget tests
+        run: flutter test
+      - name: Verify Supabase publishable key
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Missing GitHub Actions secret SUPABASE_ANON_KEY. Add the Supabase publishable/anon key in repository Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+      - name: Build APK
+        env:
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: flutter build apk --release --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaghaf-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

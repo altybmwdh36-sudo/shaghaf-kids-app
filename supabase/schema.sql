@@ -1,0 +1,329 @@
+-- Shaghaf central administration schema (Supabase / PostgreSQL)
+create extension if not exists pgcrypto;
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('admin','moderator','member')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.subscribers (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid unique references auth.users(id) on delete set null,
+  display_name text not null,
+  phone text,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz
+);
+
+alter table public.subscribers add column if not exists phone text;
+create unique index if not exists subscribers_phone_unique on public.subscribers(phone) where phone is not null;
+
+create table if not exists public.videos (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  category text not null,
+  language text not null default 'العربية',
+  video_url text not null,
+  status text not null default 'pending' check (status in ('draft','pending','published','blocked')),
+  allow_comments boolean not null default true,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.comments (
+  id uuid primary key default gen_random_uuid(),
+  video_id uuid not null references public.videos(id) on delete cascade,
+  author_id uuid references auth.users(id) on delete set null,
+  body text not null check (char_length(body) between 1 and 1000),
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.video_views (
+  id uuid primary key default gen_random_uuid(),
+  video_id uuid not null references public.videos(id) on delete cascade,
+  viewer_id uuid references auth.users(id) on delete set null,
+  viewed_at timestamptz not null default now()
+);
+
+create table if not exists public.video_likes (
+  video_id uuid not null references public.videos(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key(video_id,user_id)
+);
+
+create table if not exists public.content_reports (
+  id uuid primary key default gen_random_uuid(),
+  video_id uuid references public.videos(id) on delete cascade,
+  comment_id uuid references public.comments(id) on delete cascade,
+  reporter_id uuid references auth.users(id) on delete set null,
+  reason text not null,
+  status text not null default 'open' check (status in ('open','reviewed','closed')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.app_settings (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users(id)
+);
+
+create table if not exists public.admin_audit_log (
+  id bigint generated always as identity primary key,
+  actor_id uuid references auth.users(id),
+  action text not null,
+  target_type text,
+  target_id text,
+  created_at timestamptz not null default now()
+);
+
+create or replace function public.is_shaghaf_admin()
+returns boolean language sql stable security definer set search_path = public
+as $$ select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') $$;
+
+alter table public.profiles enable row level security;
+alter table public.subscribers enable row level security;
+alter table public.videos enable row level security;
+alter table public.comments enable row level security;
+alter table public.video_views enable row level security;
+alter table public.video_likes enable row level security;
+alter table public.content_reports enable row level security;
+alter table public.app_settings enable row level security;
+alter table public.admin_audit_log enable row level security;
+
+drop policy if exists "profile self or admin read" on public.profiles;
+create policy "profile self or admin read" on public.profiles for select to authenticated
+using (id = auth.uid() or public.is_shaghaf_admin());
+drop policy if exists "admin manages profiles" on public.profiles;
+create policy "admin manages profiles" on public.profiles for all to authenticated
+using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+
+drop policy if exists "admin reads subscriber totals and records" on public.subscribers;
+create policy "admin reads subscriber totals and records" on public.subscribers for select to authenticated
+using (public.is_shaghaf_admin());
+drop policy if exists "admin manages subscribers" on public.subscribers;
+create policy "admin manages subscribers" on public.subscribers for all to authenticated
+using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+
+drop policy if exists "published videos visible" on public.videos;
+create policy "published videos visible" on public.videos for select to anon, authenticated
+using (status = 'published' or public.is_shaghaf_admin());
+drop policy if exists "admin manages videos" on public.videos;
+create policy "admin manages videos" on public.videos for all to authenticated
+using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+
+drop policy if exists "approved comments visible" on public.comments;
+create policy "approved comments visible" on public.comments for select to anon, authenticated
+using (status = 'approved' or public.is_shaghaf_admin());
+drop policy if exists "admin moderates comments" on public.comments;
+create policy "admin moderates comments" on public.comments for all to authenticated
+using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+
+drop policy if exists "admin reads views" on public.video_views;
+create policy "admin reads views" on public.video_views for select to authenticated
+using (public.is_shaghaf_admin());
+drop policy if exists "admin reads likes" on public.video_likes;
+create policy "admin reads likes" on public.video_likes for select to authenticated
+using (public.is_shaghaf_admin());
+drop policy if exists "admin handles reports" on public.content_reports;
+create policy "admin handles reports" on public.content_reports for all to authenticated
+using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+drop policy if exists "admin controls settings" on public.app_settings;
+create policy "admin controls settings" on public.app_settings for all to authenticated
+using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
+drop policy if exists "admin reads audit log" on public.admin_audit_log;
+create policy "admin reads audit log" on public.admin_audit_log for select to authenticated
+using (public.is_shaghaf_admin());
+
+insert into storage.buckets (id, name, public)
+values ('shaghaf-videos', 'shaghaf-videos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "public reads published media" on storage.objects;
+create policy "public reads published media" on storage.objects for select
+using (bucket_id = 'shaghaf-videos');
+drop policy if exists "admins upload media" on storage.objects;
+create policy "admins upload media" on storage.objects for insert to authenticated
+with check (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
+drop policy if exists "admins update media" on storage.objects;
+create policy "admins update media" on storage.objects for update to authenticated
+using (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin())
+with check (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
+drop policy if exists "admins delete media" on storage.objects;
+create policy "admins delete media" on storage.objects for delete to authenticated
+using (bucket_id = 'shaghaf-videos' and public.is_shaghaf_admin());
+
+-- After creating the first administrator through Supabase Auth, grant the role:
+-- insert into public.profiles(id, role) values ('AUTH-USER-UUID-HERE', 'admin');
+-- Never put a service_role key or administrator password in the mobile application.
+
+
+-- Online search endpoint: searches only published and moderated videos.
+-- SECURITY INVOKER keeps the caller's RLS policies in force.
+create or replace function public.search_published_videos(
+  p_query text default '',
+  p_category text default null,
+  p_limit integer default 30,
+  p_offset integer default 0
+)
+returns table (
+  id uuid,
+  title text,
+  description text,
+  category text,
+  language text,
+  video_url text,
+  created_at timestamptz
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select v.id, v.title, v.description, v.category, v.language, v.video_url, v.created_at
+  from public.videos v
+  where v.status = 'published'
+    and (p_category is null or v.category = p_category)
+    and (
+      coalesce(trim(p_query), '') = ''
+      or v.title ilike '%' || trim(p_query) || '%'
+      or v.description ilike '%' || trim(p_query) || '%'
+      or v.category ilike '%' || trim(p_query) || '%'
+    )
+  order by v.created_at desc
+  limit greatest(1, least(coalesce(p_limit, 30), 50))
+  offset greatest(coalesce(p_offset, 0), 0);
+$$;
+
+grant execute on function public.search_published_videos(text, text, integer, integer) to anon, authenticated;
+
+-- Store the verified contact selected during Supabase Auth registration.
+alter table public.subscribers add column if not exists email text;
+create unique index if not exists subscribers_email_unique
+  on public.subscribers(lower(email)) where email is not null;
+
+-- This RPC is callable only by an authenticated user and always writes that
+-- user's own subscriber row. The client never receives elevated database keys.
+create or replace function public.register_shaghaf_subscriber(
+  p_display_name text,
+  p_email text default null,
+  p_phone text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+  if length(trim(coalesce(p_display_name, ''))) < 2 then
+    raise exception 'A valid display name is required';
+  end if;
+  if (nullif(trim(p_email), '') is null) = (nullif(trim(p_phone), '') is null) then
+    raise exception 'Provide exactly one verified contact method';
+  end if;
+
+  insert into public.profiles(id, role)
+  values (v_user_id, 'member')
+  on conflict (id) do nothing;
+
+  insert into public.subscribers(auth_user_id, display_name, email, phone)
+  values (
+    v_user_id,
+    trim(p_display_name),
+    case when p_email is null then null else lower(trim(p_email)) end,
+    nullif(trim(p_phone), '')
+  )
+  on conflict (auth_user_id) do update
+    set display_name = excluded.display_name,
+        email = excluded.email,
+        phone = excluded.phone;
+end;
+$$;
+
+revoke all on function public.register_shaghaf_subscriber(text, text, text) from public, anon;
+grant execute on function public.register_shaghaf_subscriber(text, text, text) to authenticated;
+
+
+-- Enforce one active installation per authenticated Shaghaf account.
+-- The random installation identifier is stored in platform secure storage.
+create table if not exists public.shaghaf_device_bindings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  device_id text not null check (length(device_id) = 64),
+  updated_at timestamptz not null default now()
+);
+alter table public.shaghaf_device_bindings enable row level security;
+
+-- Called on app restore. It creates a first binding for legacy accounts,
+-- accepts the current device, and rejects any other installation.
+create or replace function public.check_shaghaf_device(p_device_id text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_bound_device text;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_device_id is null or length(p_device_id) <> 64
+     or p_device_id !~ '^[0-9a-f]{64}$' then
+    raise exception 'Invalid device identifier';
+  end if;
+
+  insert into public.shaghaf_device_bindings(user_id, device_id)
+  values (v_user_id, p_device_id)
+  on conflict (user_id) do nothing;
+
+  select device_id into v_bound_device
+  from public.shaghaf_device_bindings
+  where user_id = v_user_id;
+
+  if v_bound_device = p_device_id then
+    update public.shaghaf_device_bindings
+      set updated_at = now() where user_id = v_user_id;
+    return true;
+  end if;
+  return false;
+end;
+$$;
+
+-- Called only after a fresh OTP has been verified. It transfers the one
+-- active-device binding to the newly authenticated installation.
+create or replace function public.claim_shaghaf_device(p_device_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_device_id is null or length(p_device_id) <> 64
+     or p_device_id !~ '^[0-9a-f]{64}$' then
+    raise exception 'Invalid device identifier';
+  end if;
+
+  insert into public.shaghaf_device_bindings(user_id, device_id, updated_at)
+  values (v_user_id, p_device_id, now())
+  on conflict (user_id) do update
+    set device_id = excluded.device_id,
+        updated_at = now();
+end;
+$$;
+
+revoke all on function public.check_shaghaf_device(text) from public, anon;
+revoke all on function public.claim_shaghaf_device(text) from public, anon;
+grant execute on function public.check_shaghaf_device(text) to authenticated;
+grant execute on function public.claim_shaghaf_device(text) to authenticated;
