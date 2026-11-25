@@ -111,15 +111,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String _normalizePhone(String value) {
     var phone = value.trim()
-      .replaceAll(RegExp(r'[\\s\\-()]+'), '')
+      .replaceAll(RegExp(r'[\s\-()]+' ), '')
       .replaceAll('٠', '0').replaceAll('١', '1').replaceAll('٢', '2')
       .replaceAll('٣', '3').replaceAll('٤', '4').replaceAll('٥', '5')
       .replaceAll('٦', '6').replaceAll('٧', '7').replaceAll('٨', '8')
       .replaceAll('٩', '9');
-    if (phone.startsWith('00')) phone = '+${phone.substring(2)}';
-    if (phone.startsWith('967')) phone = '+$phone';
-    if (phone.startsWith('0')) phone = '+967${phone.substring(1)}';
-    if (RegExp(r'^7\\d{8}
+    if (phone.startsWith('00')) phone = '+' + phone.substring(2);
+    if (phone.startsWith('967')) phone = '+' + phone;
+    if (phone.startsWith('0')) phone = '+967' + phone.substring(1);
+    if (RegExp(r'^7\d{8}$').hasMatch(phone)) phone = '+967' + phone;
+    return phone;
+  }
+
+  Future<void> sendCode() async {
+    final n = nameController.text.trim();
+    final enteredTarget = destinationController.text.trim();
+    final target = useEmail ? enteredTarget : _normalizePhone(enteredTarget);
     if (!shaghafBackendReady) {
       message('لم يكتمل إعداد اتصال قاعدة بيانات شَغَف بعد.');
       return;
@@ -133,9 +140,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     if (!useEmail && !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(target)) {
-      message('اكتب رقم الهاتف بالصيغة الدولية، مثال: +9677xxxxxxxx');
+      message('رقم الهاتف غير صحيح. أدخل رقمك اليمني مثل 7xxxxxxxx أو 9677xxxxxxxx أو +9677xxxxxxxx.');
       return;
     }
+    if (!useEmail) destinationController.text = target;
     setState(() => saving = true);
     try {
       await Supabase.instance.client.auth.signInWithOtp(
@@ -147,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => codeSent = true);
       message(useEmail ? 'تم طلب الرمز. افحص بريدك الإلكتروني.' : 'تم طلب رمز التحقق برسالة SMS.');
     } on AuthException catch (e) {
-      message('تعذر إرسال الرمز: ${e.message}');
+      message('تعذر إرسال الرمز: ' + e.message);
     } catch (_) {
       message('تعذر إرسال الرمز. تحقق من إعدادات البريد أو SMS في Supabase.');
     } finally {
