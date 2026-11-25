@@ -274,7 +274,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       final data = Map<String, dynamic>.from(response.data as Map);
       final count = data['imported_count'] ?? 0;
       if (mounted) setState(() => message =
-        'اكتمل البحث في مكتبة NASA. أضيف $count مقطعاً إلى قائمة المراجعة فقط؛ لن يظهر أي مقطع للمشتركين قبل فحصه ونشره.');
+        'اكتمل البحث في NASA وWikimedia Commons. أضيف $count مقطعاً إلى قائمة المراجعة فقط؛ لن يظهر أي مقطع للمشتركين قبل فحصه ونشره.');
       await loadVideos();
     } catch (_) {
       if (mounted) setState(() => message =
@@ -315,12 +315,12 @@ class _VideoAdminState extends State<_VideoAdmin> {
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
     const Text('اكتشاف مقاطع تعليمية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
-    const Text('ابحث في مكتبة NASA الرسمية عن مقاطع في الفضاء والعلوم والطبيعة والتقنية. جميع النتائج تدخل المراجعة ولا تُنشر تلقائياً.', style: TextStyle(color: Colors.black54)),
+    const Text('ابحث في NASA وWikimedia Commons عن مقاطع في الفضاء والعلوم والطبيعة والتقنية. تُقبل من Commons الملفات ذات بيانات الترخيص المسموح بها فقط، وجميع النتائج تدخل المراجعة ولا تُنشر تلقائياً.', style: TextStyle(color: Colors.black54)),
     const SizedBox(height: 10),
     FilledButton.tonalIcon(
       onPressed: discovering ? null : discoverNasaVideos,
       icon: discovering ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-      label: Text(discovering ? 'جارٍ البحث في NASA...' : 'جلب مقاطع جديدة للمراجعة'),
+      label: Text(discovering ? 'جارٍ البحث في المصادر...' : 'جلب مقاطع جديدة للمراجعة'),
     ),
     const Divider(height: 30),
     const Text('إضافة فيديو يدوياً', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
