@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, repair/flutter-app-structure, restore/main-compatible]
+    branches: [main, repair/flutter-app-structure, restore/main-compatible, repair/shaghaf-release-2026]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -48,10 +48,10 @@ jobs:
               Path("android"),
           ]
           patterns = [
-              (re.compile(r"(\\bcompileSdkVersion\\s*[= ]\\s*)\\d+"), r"\\g<1>36"),
-              (re.compile(r"(\\bcompileSdk\\s*=\\s*)\\d+"), r"\\g<1>36"),
-              (re.compile(r"(\\bcompileSdkVersion\\s+)(?:flutter\\.compileSdkVersion|\\d+)"), r"\\g<1>36"),
-              (re.compile(r"(\\bcompileSdk\\s*=\\s*)(?:flutter\\.compileSdkVersion|\\d+)"), r"\\g<1>36"),
+              (re.compile(r"(\bcompileSdkVersion\s*[= ]\s*)\\d+"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdk\s*=\s*)\\d+"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdkVersion\s+)(?:flutter\.compileSdkVersion|\\d+)"), r"\g<1>36"),
+              (re.compile(r"(\bcompileSdk\s*=\s*)(?:flutter\.compileSdkVersion|\\d+)"), r"\g<1>36"),
           ]
           changed = []
           for root in roots:
