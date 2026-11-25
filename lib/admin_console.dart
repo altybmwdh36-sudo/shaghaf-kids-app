@@ -191,7 +191,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
     try {
       final db = Supabase.instance.client;
       final rows = await db.from('videos')
-        .select('id,title,status,created_at,video_views(id),video_likes(user_id)')
+        .select('id,title,video_url,description,category,language,status,created_at,video_views(id),video_likes(user_id)')
         .order('created_at', ascending: false).limit(100);
       final enriched = rows.map<Map<String, dynamic>>((raw) {
         final video = Map<String, dynamic>.from(raw);
@@ -206,6 +206,48 @@ class _VideoAdminState extends State<_VideoAdmin> {
   }
 
   Future<void> changeVideoStatus(Map<String, dynamic> video, String status) async {
+    if (status == 'published') {
+      var reviewed = false;
+      final approved = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, setDialogState) => AlertDialog(
+            title: const Text('مراجعة ما قبل النشر'),
+            content: SingleChildScrollView(child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(video['title']?.toString() ?? 'فيديو بدون عنوان',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('القسم: ${video['category'] ?? 'غير محدد'} • اللغة: ${video['language'] ?? 'غير محددة'}'),
+                const SizedBox(height: 8),
+                const Text('افتح الفيديو وافحصه كاملاً، بما في ذلك الصوت والصورة المصغرة والمصدر وملاءمته للفئة العمرية وحقوق استخدامه.'),
+                const SizedBox(height: 8),
+                SelectableText(video['video_url']?.toString() ?? ''),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: reviewed,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text('أؤكد أنني راجعت المحتوى كاملاً وتحققت من ملاءمته ومصدره.'),
+                  onChanged: (value) => setDialogState(() => reviewed = value ?? false),
+                ),
+              ],
+            )),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('إلغاء')),
+              FilledButton(
+                onPressed: reviewed ? () => Navigator.pop(dialogContext, true) : null,
+                child: const Text('تأكيد النشر'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (approved != true) return;
+    }
     try {
       await Supabase.instance.client.from('videos').update({'status': status}).eq('id', video['id']);
       await loadVideos();
