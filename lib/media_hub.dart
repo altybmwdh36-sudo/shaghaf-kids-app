@@ -223,11 +223,11 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
     }).toList();
   }
 
-  Future<void> openVideo(ShaghafVideo video) async {
+  Future<void> openVideo(int index, List<ShaghafVideo> videos) async {
     await showModalBottomSheet<void>(
       context: context, isScrollControlled: true, useSafeArea: true,
       backgroundColor: Colors.black,
-      builder: (context) => _ShaghafVideoPlayer(video: video),
+      builder: (context) => _ShaghafVideoPlayer(videos: videos, initialIndex: index),
     );
   }
 
@@ -286,7 +286,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                 return Card(
                   clipBehavior: Clip.antiAlias, margin: const EdgeInsets.only(bottom: 16),
                   child: InkWell(
-                    onTap: () => openVideo(video),
+                    onTap: () => openVideo(index, videos),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                       AspectRatio(
                         aspectRatio: 16 / 9,
@@ -348,13 +348,48 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
 }
 
 class _ShaghafVideoPlayer extends StatefulWidget {
-  const _ShaghafVideoPlayer({required this.video});
-  final ShaghafVideo video;
+  const _ShaghafVideoPlayer({required this.videos, required this.initialIndex});
+  final List<ShaghafVideo> videos;
+  final int initialIndex;
   @override
   State<_ShaghafVideoPlayer> createState() => _ShaghafVideoPlayerState();
 }
 
 class _ShaghafVideoPlayerState extends State<_ShaghafVideoPlayer> {
+  late final PageController pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: MediaQuery.of(context).size.height * 0.82,
+    child: PageView.builder(
+      controller: pageController,
+      scrollDirection: Axis.vertical,
+      itemCount: widget.videos.length,
+      itemBuilder: (context, index) => _ShaghafVideoPage(video: widget.videos[index]),
+    ),
+  );
+}
+
+class _ShaghafVideoPage extends StatefulWidget {
+  const _ShaghafVideoPage({required this.video});
+  final ShaghafVideo video;
+  @override
+  State<_ShaghafVideoPage> createState() => _ShaghafVideoPageState();
+}
+
+class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
   VideoPlayerController? controller;
   bool loading = true;
   String? error;
