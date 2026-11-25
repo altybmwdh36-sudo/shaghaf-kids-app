@@ -275,7 +275,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
         body: {
           'categories': discoveryCategories.toList(),
           'topic': discoveryTopic.text.trim(),
-          'max_per_section': 8,
+          'max_per_section': 4,
         },
       );
       if (response.status < 200 || response.status >= 300) {
@@ -337,8 +337,15 @@ class _VideoAdminState extends State<_VideoAdmin> {
       dense: true, contentPadding: EdgeInsets.zero,
       title: Text(name), value: discoveryCategories.contains(name),
       onChanged: discovering ? null : (checked) => setState(() {
-        if (checked == true) { discoveryCategories.add(name); }
-        else { discoveryCategories.remove(name); }
+        if (checked == true) {
+          if (discoveryCategories.length >= 5) {
+            message = 'يمكن اختيار خمسة أقسام كحد أقصى في كل عملية بحث.';
+          } else {
+            discoveryCategories.add(name);
+          }
+        } else {
+          discoveryCategories.remove(name);
+        }
       }),
     )),
     const SizedBox(height: 8),
