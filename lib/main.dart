@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'device_guard.dart';
 import 'backend.dart';
 import 'media_hub.dart';
 import 'admin_console.dart';
@@ -27,7 +28,22 @@ class _ShaghafAppState extends State<ShaghafApp> {
   }
 
   Future<void> _restore() async {
-    final user = shaghafBackendReady ? Supabase.instance.client.auth.currentUser : null;
+    final client = shaghafBackendReady ? Supabase.instance.client : null;
+    var user = client?.auth.currentUser;
+    if (user != null) {
+      try {
+        final deviceId = await ShaghafDeviceGuard.getDeviceId();
+        final allowed = await client!.rpc('check_shaghaf_device',
+          params: {'p_device_id': deviceId}) as bool;
+        if (!allowed) {
+          await client.auth.signOut();
+          user = null;
+        }
+      } catch (_) {
+        await client!.auth.signOut();
+        user = null;
+      }
+    }
     if (!mounted) return;
     setState(() {
       name = user?.userMetadata?['display_name'] as String?;
@@ -185,6 +201,11 @@ class _LoginScreenState extends State<LoginScreen> {
         'p_email': useEmail ? target : null,
         'p_phone': useEmail ? null : target,
       });
+      // Bind this installation only after Supabase has verified the OTP.
+      // A fresh verified login transfers the one active-device binding.
+      final deviceId = await ShaghafDeviceGuard.getDeviceId();
+      await client.rpc('claim_shaghaf_device',
+        params: {'p_device_id': deviceId});
       await widget.onLogin(n);
     } on AuthException catch (e) {
       message('رمز التحقق غير صحيح أو انتهت صلاحيته: ${e.message}');
