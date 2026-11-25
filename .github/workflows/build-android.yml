@@ -28,10 +28,9 @@ jobs:
           s = s.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36")
           s = s.replace("compileSdkVersion flutter.compileSdkVersion", "compileSdkVersion 36")
           p.write_text(s)
-
           PY
       - name: Allow network media playback
-        run: sed -i '/<application/i\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+        run: sed -i '/<application/i\\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
       - name: Get dependencies
         run: flutter pub get
       - name: Normalize Android plugin compile SDK to 36
@@ -45,10 +44,10 @@ jobs:
               Path("android"),
           ]
           patterns = [
-              (re.compile(r"(\bcompileSdkVersion\s*[= ]\s*)\d+"), r"\g<1>36"),
-              (re.compile(r"(\bcompileSdk\s*=\s*)\d+"), r"\g<1>36"),
-              (re.compile(r"(\bcompileSdkVersion\s+)(?:flutter\.compileSdkVersion|\d+)"), r"\g<1>36"),
-              (re.compile(r"(\bcompileSdk\s*=\s*)(?:flutter\.compileSdkVersion|\d+)"), r"\g<1>36"),
+              (re.compile(r"(\\bcompileSdkVersion\\s*[= ]\\s*)\\d+"), r"\\g<1>36"),
+              (re.compile(r"(\\bcompileSdk\\s*=\\s*)\\d+"), r"\\g<1>36"),
+              (re.compile(r"(\\bcompileSdkVersion\\s+)(?:flutter\\.compileSdkVersion|\\d+)"), r"\\g<1>36"),
+              (re.compile(r"(\\bcompileSdk\\s*=\\s*)(?:flutter\\.compileSdkVersion|\\d+)"), r"\\g<1>36"),
           ]
           changed = []
           for root in roots:
@@ -68,12 +67,12 @@ jobs:
                       gradle.write_text(updated)
                       changed.append(str(gradle))
           print("Updated Gradle compile SDK in:")
-          print("\n".join(changed) if changed else "No plugin overrides were needed.")
+          print("\\n".join(changed) if changed else "No plugin overrides were needed.")
           PY
       - name: Analyze
         run: flutter analyze --no-fatal-infos
       - name: Build APK
-        run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        run: flutter build apk --release --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
