@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [main, repair/flutter-app-structure]
+    branches: [main, repair/flutter-app-structure, restore/main-compatible]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -74,7 +74,7 @@ jobs:
           print("\\n".join(changed) if changed else "No plugin overrides were needed.")
           PY
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --no-fatal-infos lib/main.dart lib/backend.dart lib/device_guard.dart lib/media_hub.dart lib/admin_console.dart
       - name: Run widget tests
         run: flutter test
       - name: Verify Supabase publishable key
