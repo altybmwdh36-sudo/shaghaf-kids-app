@@ -177,6 +177,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
   final sourceUrl = TextEditingController();
   String language = 'العربية';
   bool busy = false;
+  bool discovering = false;
   String? message;
   List<Map<String, dynamic>> existingVideos = [];
 
@@ -218,6 +219,29 @@ class _VideoAdminState extends State<_VideoAdmin> {
     } catch (_) { if (mounted) setState(() => message = 'تعذر حذف الفيديو.'); }
   }
 
+  Future<void> discoverNasaVideos() async {
+    setState(() { discovering = true; message = null; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'discover-videos',
+        body: {'categories': ['الفضاء', 'العلوم', 'الطبيعة', 'التقنية']},
+      );
+      if (response.status < 200 || response.status >= 300) {
+        throw Exception('HTTP ${response.status}');
+      }
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final count = data['imported_count'] ?? 0;
+      if (mounted) setState(() => message =
+        'اكتمل البحث في مكتبة NASA. أضيف $count مقطعاً إلى قائمة المراجعة فقط؛ لن يظهر أي مقطع للمشتركين قبل فحصه ونشره.');
+      await loadVideos();
+    } catch (_) {
+      if (mounted) setState(() => message =
+        'تعذر جلب المقاطع. تأكد من نشر وظيفة discover-videos وأن حسابك يملك صلاحية المدير.');
+    } finally {
+      if (mounted) setState(() => discovering = false);
+    }
+  }
+
   Future<void> publish() async {
     final source = sourceUrl.text.trim();
     final uri = Uri.tryParse(source);
@@ -247,7 +271,17 @@ class _VideoAdminState extends State<_VideoAdmin> {
   }
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
-    const Text('نشر فيديو جديد', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+    const Text('اكتشاف مقاطع تعليمية', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const Text('ابحث في مكتبة NASA الرسمية عن مقاطع في الفضاء والعلوم والطبيعة والتقنية. جميع النتائج تدخل المراجعة ولا تُنشر تلقائياً.', style: TextStyle(color: Colors.black54)),
+    const SizedBox(height: 10),
+    FilledButton.tonalIcon(
+      onPressed: discovering ? null : discoverNasaVideos,
+      icon: discovering ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+      label: Text(discovering ? 'جارٍ البحث في NASA...' : 'جلب مقاطع جديدة للمراجعة'),
+    ),
+    const Divider(height: 30),
+    const Text('إضافة فيديو يدوياً', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
     const SizedBox(height: 12),
     TextField(controller: title, decoration: const InputDecoration(labelText: 'عنوان الفيديو', border: OutlineInputBorder())),
     const SizedBox(height: 10),
