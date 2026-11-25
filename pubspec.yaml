@@ -1,26 +1,19 @@
 name: shaghaf_kids_app
-description: "منصة شَغَف للأطفال والنشء حتى 20 سنة - دخول مجاني ضمن الاشتراك، ربط ومفتوح بالنت مباشرة، تبويبات الأقسام وديليز والمفضلة والسجل، مع فلترة احترافية للدين والقيم والمبادئ والأخلاق والتعليم."
+description: "منصة شَغَف التعليمية الآمنة للأطفال والناشئة حتى 20 سنة"
 publish_to: 'none'
-version: 1.2.0+8
-
+version: 1.3.0+9
 environment:
-  sdk: '>=3.2.0 <4.0.0'
-
+  sdk: '>=3.3.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  shared_preferences: ^2.2.3
-  url_launcher: ^6.2.6
-  http: ^1.2.2
-
+  supabase_flutter: ^2.9.1
+  url_launcher: ^6.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.2
-
+  flutter_lints: ^5.0.0
 flutter:
   uses-material-design: true
-  assets:
-    - assets/data/
