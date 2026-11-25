@@ -140,12 +140,10 @@ class _AdminStatsState extends State<_AdminStats> {
       final today = DateTime(now.year, now.month, now.day).toUtc();
       final weekStart = DateTime(now.year, now.month, now.day - now.weekday + 1).toUtc();
       final monthStart = DateTime(now.year, now.month, 1).toUtc();
-      final activeSince = DateTime.now().toUtc().subtract(const Duration(days: 30));
       final newToday = (await db.from('subscribers').select('id').gte('created_at', today.toIso8601String())).length;
       final newWeek = (await db.from('subscribers').select('id').gte('created_at', weekStart.toIso8601String())).length;
       final newMonth = (await db.from('subscribers').select('id').gte('created_at', monthStart.toIso8601String())).length;
-      final active = (await db.from('subscribers').select('id').gte('last_seen_at', activeSince.toIso8601String())).length;
-      if (mounted) setState(() => counts = {'إجمالي المشتركين': members, 'مشتركون جدد اليوم': newToday, 'مشتركون جدد هذا الأسبوع': newWeek, 'مشتركون جدد هذا الشهر': newMonth, 'نشطون خلال 30 يومًا': active, 'الفيديوهات': videos, 'التعليقات': comments, 'تعليقات قيد المراجعة': pending});
+      if (mounted) setState(() => counts = {'إجمالي المشتركين': members, 'مشتركون جدد اليوم': newToday, 'مشتركون جدد هذا الأسبوع': newWeek, 'مشتركون جدد هذا الشهر': newMonth, 'الفيديوهات': videos, 'التعليقات': comments, 'تعليقات قيد المراجعة': pending});
     } catch (_) { if (mounted) setState(() => error = 'تعذر تحميل الإحصائيات. تحقق من الجداول وصلاحيات قاعدة البيانات.'); }
     finally { if (mounted) setState(() => loading = false); }
   }
@@ -160,7 +158,7 @@ class _AdminStatsState extends State<_AdminStats> {
       ...counts.entries.map((e) => Card(child: ListTile(
         leading: const CircleAvatar(backgroundColor: Color(0xFFE1F0E8), child: Icon(Icons.insights, color: _green)),
         title: Text(e.key), trailing: Text('${e.value}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))))),
-      const Padding(padding: EdgeInsets.only(top: 12), child: Text('تعتمد الأرقام على السجلات المركزية. لن تظهر الاشتراكات الجديدة حتى ربط نموذج اشتراك الأعضاء بالخادم.',
+      const Padding(padding: EdgeInsets.only(top: 12), child: Text('تعرض هذه اللوحة أعداد المشتركين والفيديوهات والتعليقات المسجلة في قاعدة بيانات شغف.',
         style: TextStyle(color: Colors.black54))),
     ],
   ));
@@ -178,7 +176,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
   final category = TextEditingController(text: 'العلوم والفضاء');
   final sourceUrl = TextEditingController();
   String language = 'العربية';
-  String status = 'pending';
+  static const String status = 'pending';
   bool busy = false;
   String? message;
   List<Map<String, dynamic>> existingVideos = [];
@@ -236,11 +234,11 @@ class _VideoAdminState extends State<_VideoAdmin> {
       await db.from('videos').insert({
         'title': title.text.trim(), 'description': description.text.trim(),
         'category': category.text.trim(), 'language': language,
-        'video_url': source, 'status': status,
+        'video_url': source, 'status': 'pending',
         'allow_comments': true, 'created_by': db.auth.currentUser!.id,
       });
       title.clear(); description.clear(); sourceUrl.clear();
-      setState(() => message = 'تم حفظ رابط الفيديو في قاعدة البيانات.');
+      setState(() => message = 'تم إرسال الفيديو إلى قائمة المراجعة. لن يظهر للمشتركين قبل اعتماده ونشره من المدير.');
       await loadVideos();
     } catch (_) {
       if (mounted) setState(() => message = 'تعذر حفظ الفيديو. تحقق من إعداد قاعدة البيانات وصلاحيات المدير.');
@@ -262,9 +260,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       items: const [DropdownMenuItem(value: 'العربية', child: Text('العربية')), DropdownMenuItem(value: 'الإنجليزية', child: Text('الإنجليزية'))],
       onChanged: (v) { if (v != null) setState(() => language = v); }),
     const SizedBox(height: 10),
-    DropdownButtonFormField<String>(value: status, decoration: const InputDecoration(labelText: 'حالة الفيديو'),
-      items: const [DropdownMenuItem(value: 'pending', child: Text('قيد المراجعة')), DropdownMenuItem(value: 'draft', child: Text('مسودة')), DropdownMenuItem(value: 'published', child: Text('نشر مباشر'))],
-      onChanged: (v) { if (v != null) setState(() => status = v); }),
+    const ListTile(leading: Icon(Icons.verified_user_outlined), title: Text('حالة النشر: قيد المراجعة'), subtitle: Text('كل فيديو جديد يُرسل للمراجعة أولاً. النشر متاح للمدير بعد فحص المحتوى والمصدر.'),),
     const SizedBox(height: 10),
     const Center(child: Text('أدخل رابط HTTPS مباشرًا لملف MP4 أو HLS؛ روابط صفحات يوتيوب لا تعمل في المشغّل الحالي')),
     TextField(controller: sourceUrl, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'رابط الفيديو', border: OutlineInputBorder())),
