@@ -7,7 +7,12 @@ import 'admin_console.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeShaghafBackend();
+  // Do not let a slow/unavailable backend prevent the Android UI from opening.
+  // The login screen can still render and the connection can finish in the background.
+  await initializeShaghafBackend().timeout(
+    const Duration(seconds: 12),
+    onTimeout: () => false,
+  );
   runApp(const ShaghafApp());
 }
 
