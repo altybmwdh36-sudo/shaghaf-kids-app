@@ -1,8 +1,8 @@
 name: Build Android APK
 
 concurrency:
-  group: shaghaf-android-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: shaghaf-android-${{ github.run_id }}
+  cancel-in-progress: false
 
 on:
   push:
