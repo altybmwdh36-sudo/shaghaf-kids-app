@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend.dart';
 import 'media_hub.dart';
@@ -73,6 +72,7 @@ class _ShaghafAppState extends State<ShaghafApp> {
           color: states.contains(WidgetState.selected) ? const Color(0xFF0B5B46) : const Color(0xFF68756F))),
         iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
           size: 26, color: states.contains(WidgetState.selected) ? const Color(0xFF0B5B46) : const Color(0xFF68756F))),
+    ),
     ),
     home: loading
       ? const Scaffold(body: Center(child: CircularProgressIndicator()))
