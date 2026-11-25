@@ -74,7 +74,10 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON body." }, 400); }
   const requested = Array.isArray(body.categories)
-    ? body.categories.filter((v): v is string => typeof v === "string").slice(0, 12) : [];
+    ? body.categories.filter((v): v is string => typeof v === "string") : [];
+  if (requested.length > 5) {
+    return json({ error: "اختر خمسة أقسام كحد أقصى في عملية البحث الواحدة، ويمكنك تكرار البحث لبقية الأقسام." }, 400);
+  }
   const topic = clean(body.topic, 180);
   if (requested.length === 0 && !topic) {
     return json({ error: "اختر قسماً واحداً على الأقل أو اكتب موضوع البحث." }, 400);
@@ -89,7 +92,7 @@ Deno.serve(async (req) => {
   const imported: Array<{ title: string; category: string; source: string }> = [];
   const skipped: Array<{ title: string; reason: string }> = [];
   const seen = new Set<string>();
-  const maxPerSection = Math.max(1, Math.min(Number(body.max_per_section) || 8, 15));
+  const maxPerSection = Math.max(1, Math.min(Number(body.max_per_section) || 4, 4));
 
   async function saveCandidate(candidate: {
     title: string; description: string; category: string; url: string;
