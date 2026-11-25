@@ -16,13 +16,26 @@ const collections = [
 ];
 
 const commonsLicenseAllowed = (license: string) =>
-  /^(CC BY 4\\.0|CC BY-SA 4\\.0|CC BY 3\\.0|CC BY-SA 3\\.0|CC0 1\\.0|Public domain)/i.test(license);
+  /^(CC BY 4\.0|CC BY-SA 4\.0|CC BY 3\.0|CC BY-SA 3\.0|CC0 1\.0|Public domain)/i.test(license);
 
 function metadataText(value: unknown, max: number) {
   if (typeof value !== "string") return "";
   return value.replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
-    .replace(/\\s+/g, " ").trim().slice(0, max);
+    .replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function isCommonsVideoUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" &&
+      parsed.hostname === "upload.wikimedia.org" &&
+      parsed.pathname.startsWith("/wikipedia/commons/") &&
+      /\.(?:webm|mp4)$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
 }
 
 function json(body: unknown, status = 200) {
@@ -177,7 +190,7 @@ Deno.serve(async (req) => {
         const description = metadataText(ext.ImageDescription?.value, 900);
 
         if (typeof videoUrl !== "string" ||
-            !/^https:\\/\\/upload\\.wikimedia\\.org\\/wikipedia\\/commons\\/[A-Za-z0-9/_-]+\\.(?:webm|mp4)(?:\\?.*)?$/i.test(videoUrl) ||
+            !isCommonsVideoUrl(videoUrl) ||
             !["video/webm", "video/mp4"].includes(mime) ||
             !descriptionUrl.startsWith("https://commons.wikimedia.org/wiki/File:") ||
             !title || !commonsLicenseAllowed(licenseName)) {
@@ -196,7 +209,7 @@ Deno.serve(async (req) => {
           licenseUrl ? `رابط الرخصة: ${licenseUrl}` : "",
           attributionRequired.toLowerCase() === "true" ? "يتطلب نسب العمل إلى صاحبه." : "",
           restrictions ? `قيود مذكورة من المصدر: ${restrictions}` : "",
-        ].filter(Boolean).join("\\n");
+        ].filter(Boolean).join("\n");
 
         const { data: existing } = await db.from("videos")
           .select("id").eq("video_url", videoUrl).maybeSingle();
@@ -204,7 +217,7 @@ Deno.serve(async (req) => {
 
         const { error: insertError } = await db.from("videos").insert({
           title,
-          description: [description, attribution].filter(Boolean).join("\\n\\n"),
+          description: [description, attribution].filter(Boolean).join("\n\n"),
           category: section.category,
           language: "غير محددة",
           video_url: videoUrl,
