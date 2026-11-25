@@ -252,3 +252,78 @@ $$;
 
 revoke all on function public.register_shaghaf_subscriber(text, text, text) from public, anon;
 grant execute on function public.register_shaghaf_subscriber(text, text, text) to authenticated;
+
+
+-- Enforce one active installation per authenticated Shaghaf account.
+-- The random installation identifier is stored in platform secure storage.
+create table if not exists public.shaghaf_device_bindings (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  device_id text not null check (length(device_id) = 64),
+  updated_at timestamptz not null default now()
+);
+alter table public.shaghaf_device_bindings enable row level security;
+
+-- Called on app restore. It creates a first binding for legacy accounts,
+-- accepts the current device, and rejects any other installation.
+create or replace function public.check_shaghaf_device(p_device_id text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_bound_device text;
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_device_id is null or length(p_device_id) <> 64
+     or p_device_id !~ '^[0-9a-f]{64}$' then
+    raise exception 'Invalid device identifier';
+  end if;
+
+  insert into public.shaghaf_device_bindings(user_id, device_id)
+  values (v_user_id, p_device_id)
+  on conflict (user_id) do nothing;
+
+  select device_id into v_bound_device
+  from public.shaghaf_device_bindings
+  where user_id = v_user_id;
+
+  if v_bound_device = p_device_id then
+    update public.shaghaf_device_bindings
+      set updated_at = now() where user_id = v_user_id;
+    return true;
+  end if;
+  return false;
+end;
+$$;
+
+-- Called only after a fresh OTP has been verified. It transfers the one
+-- active-device binding to the newly authenticated installation.
+create or replace function public.claim_shaghaf_device(p_device_id text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+  if p_device_id is null or length(p_device_id) <> 64
+     or p_device_id !~ '^[0-9a-f]{64}$' then
+    raise exception 'Invalid device identifier';
+  end if;
+
+  insert into public.shaghaf_device_bindings(user_id, device_id, updated_at)
+  values (v_user_id, p_device_id, now())
+  on conflict (user_id) do update
+    set device_id = excluded.device_id,
+        updated_at = now();
+end;
+$$;
+
+revoke all on function public.check_shaghaf_device(text) from public, anon;
+revoke all on function public.claim_shaghaf_device(text) from public, anon;
+grant execute on function public.check_shaghaf_device(text) to authenticated;
+grant execute on function public.claim_shaghaf_device(text) to authenticated;
