@@ -9,11 +9,21 @@ const corsHeaders = {
 };
 
 const collections = [
-  { category: "الفضاء", query: "solar system planets space exploration" },
-  { category: "العلوم", query: "Earth science climate oceans science" },
-  { category: "الطبيعة", query: "Earth nature water atmosphere" },
-  { category: "التقنية", query: "NASA robotics technology engineering" },
+  { category: "الفضاء", nasa: "solar system planets space exploration", commons: "filetype:video solar system astronomy" },
+  { category: "العلوم", nasa: "Earth science climate oceans science", commons: "filetype:video science education experiment" },
+  { category: "الطبيعة", nasa: "Earth nature water atmosphere", commons: "filetype:video nature Earth oceans" },
+  { category: "التقنية", nasa: "NASA robotics technology engineering", commons: "filetype:video robotics engineering technology" },
 ];
+
+const commonsLicenseAllowed = (license: string) =>
+  /^(CC BY 4\\.0|CC BY-SA 4\\.0|CC BY 3\\.0|CC BY-SA 3\\.0|CC0 1\\.0|Public domain)/i.test(license);
+
+function metadataText(value: unknown, max: number) {
+  if (typeof value !== "string") return "";
+  return value.replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+    .replace(/\\s+/g, " ").trim().slice(0, max);
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -70,7 +80,7 @@ Deno.serve(async (req) => {
   for (const section of selected) {
     try {
       const searchUrl = new URL("https://images-api.nasa.gov/search");
-      searchUrl.searchParams.set("q", section.query);
+      searchUrl.searchParams.set("q", section.nasa);
       searchUrl.searchParams.set("media_type", "video");
       searchUrl.searchParams.set("page_size", "12");
       const searchResponse = await fetch(searchUrl, { signal: AbortSignal.timeout(15000) });
@@ -124,8 +134,97 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Wikimedia Commons provides a second discovery source. Only files with
+  // explicit machine-readable reuse licenses and supported direct video URLs
+  // are considered. All candidates remain pending for human review.
+  const importedCommons = new Set<string>();
+  for (const section of selected) {
+    try {
+      const commonsUrl = new URL("https://commons.wikimedia.org/w/api.php");
+      commonsUrl.searchParams.set("action", "query");
+      commonsUrl.searchParams.set("format", "json");
+      commonsUrl.searchParams.set("generator", "search");
+      commonsUrl.searchParams.set("gsrsearch", section.commons);
+      commonsUrl.searchParams.set("gsrnamespace", "6");
+      commonsUrl.searchParams.set("gsrlimit", "12");
+      commonsUrl.searchParams.set("prop", "imageinfo");
+      commonsUrl.searchParams.set("iiprop", "url|mime|extmetadata");
+      commonsUrl.searchParams.set("iiextmetadatafilter",
+        "LicenseShortName|LicenseUrl|Artist|Credit|AttributionRequired|Restrictions|ImageDescription");
+
+      const commonsResponse = await fetch(commonsUrl, {
+        signal: AbortSignal.timeout(15000),
+        headers: { "User-Agent": "ShaghafKidsApp/1.0 (educational content review)" },
+      });
+      if (!commonsResponse.ok) throw new Error(`Wikimedia Commons returned ${commonsResponse.status}`);
+      const commonsPayload = await commonsResponse.json();
+      const pages = Object.values(commonsPayload?.query?.pages ?? {}) as Array<Record<string, unknown>>;
+
+      for (const page of pages) {
+        const info = (page.imageinfo as Array<Record<string, unknown>> | undefined)?.[0];
+        if (!info) continue;
+        const videoUrl = info.url;
+        const mime = safeText(info.mime, 60).toLowerCase();
+        const descriptionUrl = safeText(info.descriptionurl, 500);
+        const ext = (info.extmetadata ?? {}) as Record<string, { value?: unknown }>;
+        const licenseName = metadataText(ext.LicenseShortName?.value, 100);
+        const licenseUrl = metadataText(ext.LicenseUrl?.value, 500);
+        const artist = metadataText(ext.Artist?.value, 300);
+        const credit = metadataText(ext.Credit?.value, 300);
+        const restrictions = metadataText(ext.Restrictions?.value, 300);
+        const attributionRequired = metadataText(ext.AttributionRequired?.value, 30);
+        const title = safeText(page.title, 180).replace(/^File:/i, "");
+        const description = metadataText(ext.ImageDescription?.value, 900);
+
+        if (typeof videoUrl !== "string" ||
+            !/^https:\\/\\/upload\\.wikimedia\\.org\\/wikipedia\\/commons\\/[A-Za-z0-9/_-]+\\.(?:webm|mp4)(?:\\?.*)?$/i.test(videoUrl) ||
+            !["video/webm", "video/mp4"].includes(mime) ||
+            !descriptionUrl.startsWith("https://commons.wikimedia.org/wiki/File:") ||
+            !title || !commonsLicenseAllowed(licenseName)) {
+          skipped.push({ title: title || "ملف من Wikimedia Commons", reason: "الرابط أو نوع الفيديو أو بيانات الترخيص غير مكتملة أو غير مدعومة" });
+          continue;
+        }
+        if (importedCommons.has(videoUrl)) continue;
+        importedCommons.add(videoUrl);
+
+        const attribution = [
+          "المصدر: Wikimedia Commons",
+          `صفحة الملف: ${descriptionUrl}`,
+          artist ? `المؤلف: ${artist}` : "",
+          credit ? `الاعتماد: ${credit}` : "",
+          `الرخصة: ${licenseName}`,
+          licenseUrl ? `رابط الرخصة: ${licenseUrl}` : "",
+          attributionRequired.toLowerCase() === "true" ? "يتطلب نسب العمل إلى صاحبه." : "",
+          restrictions ? `قيود مذكورة من المصدر: ${restrictions}` : "",
+        ].filter(Boolean).join("\\n");
+
+        const { data: existing } = await db.from("videos")
+          .select("id").eq("video_url", videoUrl).maybeSingle();
+        if (existing) continue;
+
+        const { error: insertError } = await db.from("videos").insert({
+          title,
+          description: [description, attribution].filter(Boolean).join("\\n\\n"),
+          category: section.category,
+          language: "غير محددة",
+          video_url: videoUrl,
+          status: "pending",
+          allow_comments: false,
+          created_by: userData.user.id,
+        });
+        if (insertError) {
+          skipped.push({ title, reason: "تعذر حفظ مرشح Wikimedia Commons" });
+        } else {
+          imported.push({ title, category: section.category });
+        }
+      }
+    } catch (error) {
+      skipped.push({ title: `Wikimedia Commons • ${section.category}`, reason: error instanceof Error ? error.message : "تعذر البحث" });
+    }
+  }
+
   return json({
-    source: "NASA Image and Video Library",
+    source: "NASA Image and Video Library + Wikimedia Commons",
     imported_count: imported.length,
     imported,
     skipped_count: skipped.length,
