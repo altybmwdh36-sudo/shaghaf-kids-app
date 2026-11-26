@@ -19,47 +19,9 @@ class MediaHubScreen extends StatefulWidget {
 }
 
 class _MediaHubScreenState extends State<MediaHubScreen> {
-  int section = 0;
-
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      VideoLibraryScreen(initialQuery: widget.initialQuery),
-      const AudioLibraryScreen(),
-      const NotesLibraryScreen(),
-    ];
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-          child: Row(
-            children: [
-              Expanded(child: _HubTile(
-                icon: Icons.video_library_outlined,
-                title: 'الفيديو',
-                selected: section == 0,
-                onTap: () => setState(() => section = 0),
-              )),
-              const SizedBox(width: 8),
-              Expanded(child: _HubTile(
-                icon: Icons.headphones_outlined,
-                title: 'الصوت',
-                selected: section == 1,
-                onTap: () => setState(() => section = 1),
-              )),
-              const SizedBox(width: 8),
-              Expanded(child: _HubTile(
-                icon: Icons.edit_note,
-                title: 'الكتابة',
-                selected: section == 2,
-                onTap: () => setState(() => section = 2),
-              )),
-            ],
-          ),
-        ),
-        Expanded(child: IndexedStack(index: section, children: pages)),
-      ],
-    );
+    return VideoLibraryScreen(initialQuery: widget.initialQuery);
   }
 }
 
@@ -236,7 +198,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('اكتشف وشاهد', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
-                Text(connected ? 'متصل بالإنترنت • مكتبة شغف المحدّثة' : 'مقاطع مختارة مع إمكانية تحديث المكتبة عند الاتصال', style: const TextStyle(color: Colors.black54)),
+                Text(connected ? 'متصل بالإنترنت • مكتبة شغف المحدّثة' : 'فيديوهات منشورة عبر الإنترنت • تتحدث تلقائياً عند توفر الاتصال', style: const TextStyle(color: Colors.black54)),
                 if (loadingRemote) const Padding(padding: EdgeInsets.only(top: 8), child: LinearProgressIndicator()),
                 if (connectionMessage != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(connectionMessage!, style: const TextStyle(color: Colors.orange, fontSize: 12))),
                 const SizedBox(height: 14),
@@ -312,7 +274,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
               ),
             )),
           if (videos.isEmpty)
-            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد نتائج منشورة مطابقة في مكتبة شغف حالياً'))),
+            const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('لا توجد فيديوهات منشورة مطابقة حالياً. اسحب للتحديث أو جرّب البحث لاحقاً.'))),
           const SliverToBoxAdapter(child: Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 22),
             child: Text('تُحدّث مكتبة الفيديوهات من خادم شغف، ولا يظهر فيها إلا المحتوى الذي اعتمده المشرفون بعد مراجعة المصدر واللغة وملاءمة العمر.',
