@@ -1,7 +1,7 @@
 name: shaghaf_kids_app
 description: "منصة «شَغَف» للأطفال والنشء حتى 20 سنة للبحث واستيراد وعرض الفيديوهات."
 publish_to: "none"
-version: 1.2.2+10
+version: 1.2.3+11
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
