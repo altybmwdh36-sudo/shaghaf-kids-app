@@ -30,8 +30,7 @@ class _ShaghafAppState extends State<ShaghafApp> {
     _restore();
   }
 
-  // Restore only a verified Supabase session and its bound installation.
-  // A missing/invalid session always returns the user to OTP registration.
+  // Restore an authenticated session when present, otherwise restore the local first-entry profile.
   Future<void> _restore() async {
     String? restoredName;
     final prefs = await SharedPreferences.getInstance();
@@ -74,14 +73,11 @@ class _ShaghafAppState extends State<ShaghafApp> {
     // Until SMS/email delivery is configured, restore the locally registered member
     // without presenting a non-working OTP screen on every launch.
     restoredName ??= (localName != null && localName.trim().isNotEmpty) ? localName : null;
-    try {
-    } finally {
-      if (mounted) {
-        setState(() {
-          name = restoredName;
-          loading = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        name = restoredName;
+        loading = false;
+      });
     }
   }
 
