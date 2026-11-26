@@ -116,34 +116,8 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
   }
 
   Future<void> searchYouTube(String searchTerm) async {
-    final term = searchTerm.trim();
-    if (term.isEmpty || !shaghafBackendReady) return;
-    if (mounted) setState(() { loadingRemote = true; connectionMessage = null; });
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'youtube-search', body: {'q': term, 'maxResults': 12},
-      );
-      final payload = response.data;
-      final items = (payload is Map ? payload['items'] : null);
-      if (items is! List) throw Exception('Invalid YouTube search response');
-      final found = items.map<ShaghafVideo>((raw) {
-        final item = Map<String, dynamic>.from(raw as Map);
-        final id = (item['videoId'] ?? '').toString();
-        return ShaghafVideo(
-          title: (item['title'] ?? '').toString(),
-          description: (item['description'] ?? '').toString(),
-          category: 'نتائج بحث • قيد المراجعة',
-          thumbnail: (item['thumbnail'] ?? '').toString(),
-          videoUrl: 'https://www.youtube.com/watch?v=$id',
-          sourceName: 'YouTube • ${item['channelTitle'] ?? ''}',
-        );
-      }).where((v) => v.youtubeId != null && v.title.isNotEmpty).toList();
-      if (mounted) setState(() { remoteVideos = found; hasMoreRemote = false; connected = true; });
-    } catch (_) {
-      if (mounted) setState(() { connectionMessage = 'تعذر البحث في YouTube. تأكد من إعداد خدمة البحث ومفتاح API.'; });
-    } finally {
-      if (mounted) setState(() => loadingRemote = false);
-    }
+    query = searchTerm.trim();
+    await refreshOnlineVideos();
   }
 
   Future<void> refreshOnlineVideos({bool loadMore = false}) async {
@@ -178,7 +152,9 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
           title: (data['title'] ?? '').toString(),
           description: (data['description'] ?? '').toString(),
           category: (data['category'] ?? 'متنوع').toString(),
-          thumbnail: '',
+          thumbnail: YoutubePlayer.convertUrlToId((data['video_url'] ?? '').toString()) == null
+              ? ''
+              : 'https://img.youtube.com/vi/${YoutubePlayer.convertUrlToId((data['video_url'] ?? '').toString())}/hqdefault.jpg',
           videoUrl: (data['video_url'] ?? '').toString(),
           sourceName: 'مكتبة شغف • ${data['language'] ?? 'العربية'}',
         );
