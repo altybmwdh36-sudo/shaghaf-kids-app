@@ -29,26 +29,12 @@ class _ShaghafAppState extends State<ShaghafApp> {
     _restore();
   }
 
+  // Temporary guest mode: open the learning home immediately without OTP.
+  // Supabase remains initialized in the background for online media features.
   Future<void> _restore() async {
-    final client = shaghafBackendReady ? Supabase.instance.client : null;
-    var user = client?.auth.currentUser;
-    if (user != null) {
-      try {
-        final deviceId = await ShaghafDeviceGuard.getDeviceId();
-        final allowed = await client!.rpc('check_shaghaf_device',
-          params: {'p_device_id': deviceId}) as bool;
-        if (!allowed) {
-          await client.auth.signOut();
-          user = null;
-        }
-      } catch (_) {
-        await client!.auth.signOut();
-        user = null;
-      }
-    }
     if (!mounted) return;
     setState(() {
-      name = user?.userMetadata?['display_name'] as String?;
+      name = 'زائر';
       loading = false;
     });
   }
@@ -57,10 +43,8 @@ class _ShaghafAppState extends State<ShaghafApp> {
     if (mounted) setState(() => name = verifiedName);
   }
 
-  Future<void> _logout() async {
-    if (shaghafBackendReady) await Supabase.instance.client.auth.signOut();
-    if (mounted) setState(() => name = null);
-  }
+  // Authentication is intentionally bypassed in this temporary demo build.
+  Future<void> _logout() async {}
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -446,8 +430,8 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(tooltip: 'لوحة الإدارة', onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const AdminConsoleScreen())),
             icon: const Icon(Icons.admin_panel_settings_outlined)),
-          IconButton(tooltip: 'تسجيل الخروج', onPressed: widget.onLogout,
-            icon: const Icon(Icons.logout)),
+          IconButton(tooltip: 'نسخة تجريبية: الدخول دون تسجيل', onPressed: () {},
+            icon: const Icon(Icons.info_outline)),
         ],
       ),
       body: tab == 3 ? MediaHubScreen(initialQuery: query) : Column(children: [
