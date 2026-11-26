@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'device_guard.dart';
@@ -7,13 +8,9 @@ import 'admin_console.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Do not let a slow/unavailable backend prevent the Android UI from opening.
-  // The login screen can still render and the connection can finish in the background.
-  await initializeShaghafBackend().timeout(
-    const Duration(seconds: 12),
-    onTimeout: () => false,
-  );
+  // Render the app immediately. Backend startup must never block the first frame.
   runApp(const ShaghafApp());
+  unawaited(initializeShaghafBackend().catchError((_) => false));
 }
 
 class ShaghafApp extends StatefulWidget {
