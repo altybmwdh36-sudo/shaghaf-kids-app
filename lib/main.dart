@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'device_guard.dart';
 import 'backend.dart';
 import 'media_hub.dart';
@@ -33,6 +34,8 @@ class _ShaghafAppState extends State<ShaghafApp> {
   // A missing/invalid session always returns the user to OTP registration.
   Future<void> _restore() async {
     String? restoredName;
+    final prefs = await SharedPreferences.getInstance();
+    final localName = prefs.getString('shaghaf_member_name');
     try {
       final ready = await initializeShaghafBackend();
       if (ready) {
@@ -66,8 +69,12 @@ class _ShaghafAppState extends State<ShaghafApp> {
         }
       }
     } catch (_) {
-      // Fail closed: do not open a guest session when auth/device validation fails.
       restoredName = null;
+    }
+    // Until SMS/email delivery is configured, restore the locally registered member
+    // without presenting a non-working OTP screen on every launch.
+    restoredName ??= (localName != null && localName.trim().isNotEmpty) ? localName : null;
+    try {
     } finally {
       if (mounted) {
         setState(() {
@@ -78,13 +85,17 @@ class _ShaghafAppState extends State<ShaghafApp> {
     }
   }
 
-  Future<void> _login(String verifiedName) async {
-    if (mounted) setState(() => name = verifiedName);
+  Future<void> _login(String memberName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('shaghaf_member_name', memberName.trim());
+    if (mounted) setState(() => name = memberName.trim());
   }
 
   Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('shaghaf_member_name');
     try {
-      if (shaghafBackendReady) {
+      if (shaghafBackendReady && Supabase.instance.client.auth.currentSession != null) {
         await Supabase.instance.client.auth.signOut();
       }
     } finally {
@@ -138,113 +149,34 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final nameController = TextEditingController();
-  final destinationController = TextEditingController();
-  final codeController = TextEditingController();
-  bool useEmail = true;
-  bool codeSent = false;
   bool saving = false;
 
   @override
   void dispose() {
     nameController.dispose();
-    destinationController.dispose();
-    codeController.dispose();
     super.dispose();
   }
 
-  void message(String value) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(value), behavior: SnackBarBehavior.floating));
-  }
-
-  String _normalizePhone(String value) {
-    var phone = value.trim()
-      .replaceAll(RegExp(r'[\s\-()]+' ), '')
-      .replaceAll('٠', '0').replaceAll('١', '1').replaceAll('٢', '2')
-      .replaceAll('٣', '3').replaceAll('٤', '4').replaceAll('٥', '5')
-      .replaceAll('٦', '6').replaceAll('٧', '7').replaceAll('٨', '8')
-      .replaceAll('٩', '9');
-    if (phone.startsWith('00')) phone = '+' + phone.substring(2);
-    if (phone.startsWith('967')) phone = '+' + phone;
-    if (phone.startsWith('0')) phone = '+967' + phone.substring(1);
-    if (RegExp(r'^7\d{8}$').hasMatch(phone)) phone = '+967' + phone;
-    return phone;
-  }
-
-  Future<void> sendCode() async {
-    final n = nameController.text.trim();
-    final enteredTarget = destinationController.text.trim();
-    final target = useEmail ? enteredTarget : _normalizePhone(enteredTarget);
-    if (!shaghafBackendReady) {
-      message('لم يكتمل إعداد اتصال قاعدة بيانات شَغَف بعد.');
-      return;
-    }
-    if (n.length < 2 || target.isEmpty) {
-      message('يرجى إدخال الاسم ووسيلة التواصل.');
-      return;
-    }
-    if (useEmail && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(target)) {
-      message('يرجى إدخال بريد إلكتروني صحيح.');
-      return;
-    }
-    if (!useEmail && !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(target)) {
-      message('رقم الهاتف غير صحيح. أدخل رقمك اليمني مثل 7xxxxxxxx أو 9677xxxxxxxx أو +9677xxxxxxxx.');
-      return;
-    }
-    if (!useEmail) destinationController.text = target;
-    setState(() => saving = true);
-    try {
-      await Supabase.instance.client.auth.signInWithOtp(
-        email: useEmail ? target : null,
-        phone: useEmail ? null : target,
-        shouldCreateUser: true,
-        data: {'display_name': n},
+  Future<void> continueToApp() async {
+    final memberName = nameController.text.trim();
+    if (memberName.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اكتب اسمًا من حرفين على الأقل.')),
       );
-      if (mounted) setState(() => codeSent = true);
-      message(useEmail ? 'تم طلب الرمز. افحص بريدك الإلكتروني.' : 'تم طلب رمز التحقق برسالة SMS.');
-    } on AuthException catch (e) {
-      message('تعذر إرسال الرمز: ' + e.message);
-    } catch (_) {
-      message('تعذر إرسال الرمز. تحقق من إعدادات البريد أو SMS في Supabase.');
-    } finally {
-      if (mounted) setState(() => saving = false);
-    }
-  }
-
-  Future<void> verifyCode() async {
-    final n = nameController.text.trim();
-    final target = useEmail ? destinationController.text.trim() : _normalizePhone(destinationController.text);
-    final token = codeController.text.trim();
-    if (token.length < 4) {
-      message('أدخل رمز التحقق الذي وصلك.');
       return;
     }
     setState(() => saving = true);
     try {
-      final client = Supabase.instance.client;
-      await client.auth.verifyOTP(
-        email: useEmail ? target : null,
-        phone: useEmail ? null : target,
-        token: token,
-        type: useEmail ? OtpType.email : OtpType.sms,
-      );
-      await client.rpc('register_shaghaf_subscriber', params: {
-        'p_display_name': n,
-        'p_email': useEmail ? target : null,
-        'p_phone': useEmail ? null : target,
-      });
-      // Bind this installation only after Supabase has verified the OTP.
-      // A fresh verified login transfers the one active-device binding.
-      final deviceId = await ShaghafDeviceGuard.getDeviceId();
-      await client.rpc('claim_shaghaf_device',
-        params: {'p_device_id': deviceId});
-      await widget.onLogin(n);
-    } on AuthException catch (e) {
-      message('رمز التحقق غير صحيح أو انتهت صلاحيته: ${e.message}');
-    } on PostgrestException catch (e) {
-      message('تم التحقق لكن تعذر حفظ بيانات الاشتراك: ${e.message}');
+      // This is a local first-entry profile, not phone/email verification.
+      // OTP is intentionally absent until the delivery providers are configured
+      // and successfully tested in Supabase.
+      await widget.onLogin(memberName);
     } catch (_) {
-      message('تعذر إكمال التسجيل. حاول مرة أخرى.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر حفظ بيانات الدخول على هذا الجهاز.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -276,64 +208,17 @@ class _LoginScreenState extends State<LoginScreen> {
               textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
             const SizedBox(height: 26),
             TextField(controller: nameController,
-              textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => continueToApp(),
               decoration: const InputDecoration(labelText: 'اسم المشترك',
                 prefixIcon: Icon(Icons.person_outline), border: OutlineInputBorder())),
-            const SizedBox(height: 14),
-            const Text('اختر طريقة استلام رمز التحقق', style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment<bool>(value: true, label: Text('البريد الإلكتروني'), icon: Icon(Icons.email_outlined)),
-                ButtonSegment<bool>(value: false, label: Text('رسالة SMS'), icon: Icon(Icons.sms_outlined)),
-              ],
-              selected: {useEmail},
-              onSelectionChanged: saving || codeSent ? null : (value) {
-                setState(() {
-                  useEmail = value.first;
-                  destinationController.clear();
-                  codeController.clear();
-                });
-              },
-            ),
-            const SizedBox(height: 14),
-            TextField(controller: destinationController,
-              keyboardType: useEmail ? TextInputType.text : TextInputType.phone,
-              textCapitalization: TextCapitalization.none,
-              autocorrect: false,
-              enableSuggestions: false,
-              enableInteractiveSelection: true,
-              textDirection: TextDirection.ltr, textAlign: TextAlign.left,
-              enabled: !codeSent,
-              decoration: InputDecoration(
-                labelText: useEmail ? 'البريد الإلكتروني' : 'رقم الهاتف بالصيغة الدولية',
-                hintText: useEmail ? 'name@example.com' : '+9677xxxxxxxx',
-                prefixIcon: Icon(useEmail ? Icons.email_outlined : Icons.phone_android),
-                border: const OutlineInputBorder())),
-            if (codeSent) ...[
-              const SizedBox(height: 14),
-              TextField(controller: codeController,
-                keyboardType: TextInputType.number,
-                textDirection: TextDirection.ltr, textAlign: TextAlign.center,
-                decoration: const InputDecoration(
-                  labelText: 'رمز التحقق', hintText: 'أدخل الرمز الذي وصلك',
-                  prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder())),
-            ],
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: saving ? null : (codeSent ? verifyCode : sendCode),
-              child: Text(saving ? 'يرجى الانتظار...' :
-                codeSent ? 'تأكيد الرمز وإكمال الاشتراك' : 'إرسال رمز التحقق')),
-            if (codeSent)
-              TextButton(
-                onPressed: saving ? null : () => setState(() {
-                  codeSent = false;
-                  codeController.clear();
-                }),
-                child: const Text('تغيير وسيلة التحقق أو العنوان')),
+              onPressed: saving ? null : continueToApp,
+              child: Text(saving ? 'يرجى الانتظار...' : 'دخول مجاني')),
             const SizedBox(height: 12),
-            const Text('الاشتراك مجاني بالكامل. لا يتم إنشاء الاشتراك إلا بعد نجاح التحقق من البريد الإلكتروني أو الهاتف.',
-              textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.black54)),
+            const Text('لن نطلب رقم هاتف أو بريدًا إلكترونيًا أو رمز تأكيد في هذه النسخة. يُحفظ الاسم على هذا الجهاز لتبقى مسجلاً عند فتح التطبيق لاحقًا.',
+              textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.5)),
           ]),
         ),
       ))),
