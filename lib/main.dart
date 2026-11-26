@@ -29,22 +29,68 @@ class _ShaghafAppState extends State<ShaghafApp> {
     _restore();
   }
 
-  // Temporary guest mode: open the learning home immediately without OTP.
-  // Supabase remains initialized in the background for online media features.
+  // Restore only a verified Supabase session and its bound installation.
+  // A missing/invalid session always returns the user to OTP registration.
   Future<void> _restore() async {
-    if (!mounted) return;
-    setState(() {
-      name = 'زائر';
-      loading = false;
-    });
+    String? restoredName;
+    try {
+      final ready = await initializeShaghafBackend();
+      if (ready) {
+        final client = Supabase.instance.client;
+        final user = client.auth.currentUser;
+        if (user != null) {
+          final deviceId = await ShaghafDeviceGuard.getDeviceId();
+          final allowed = await client.rpc(
+            'check_shaghaf_device',
+            params: {'p_device_id': deviceId},
+          ) as bool;
+          if (allowed) {
+            final subscriber = await client
+                .from('subscribers')
+                .select('display_name')
+                .eq('auth_user_id', user.id)
+                .maybeSingle();
+            final savedName = subscriber?['display_name']?.toString().trim();
+            final metadataName = user.userMetadata?['display_name']?.toString().trim();
+            restoredName = (savedName != null && savedName.isNotEmpty)
+                ? savedName
+                : ((metadataName != null && metadataName.isNotEmpty)
+                    ? metadataName
+                    : null);
+            if (restoredName == null) {
+              await client.auth.signOut();
+            }
+          } else {
+            await client.auth.signOut();
+          }
+        }
+      }
+    } catch (_) {
+      // Fail closed: do not open a guest session when auth/device validation fails.
+      restoredName = null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          name = restoredName;
+          loading = false;
+        });
+      }
+    }
   }
 
   Future<void> _login(String verifiedName) async {
     if (mounted) setState(() => name = verifiedName);
   }
 
-  // Authentication is intentionally bypassed in this temporary demo build.
-  Future<void> _logout() async {}
+  Future<void> _logout() async {
+    try {
+      if (shaghafBackendReady) {
+        await Supabase.instance.client.auth.signOut();
+      }
+    } finally {
+      if (mounted) setState(() => name = null);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -430,8 +476,8 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(tooltip: 'لوحة الإدارة', onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const AdminConsoleScreen())),
             icon: const Icon(Icons.admin_panel_settings_outlined)),
-          IconButton(tooltip: 'نسخة تجريبية: الدخول دون تسجيل', onPressed: () {},
-            icon: const Icon(Icons.info_outline)),
+          IconButton(tooltip: 'تسجيل الخروج', onPressed: widget.onLogout,
+            icon: const Icon(Icons.logout_rounded)),
         ],
       ),
       body: tab == 3 ? MediaHubScreen(initialQuery: query) : Column(children: [
