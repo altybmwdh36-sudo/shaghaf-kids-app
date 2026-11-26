@@ -86,54 +86,88 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
   }
 
   Future<void> refreshOnlineVideos({bool loadMore = false}) async {
-    // Backend startup runs asynchronously with the first app frame. Wait for
-    // that initialization here so the first visit to the media tab does not
-    // incorrectly fall back to the local catalog.
-    if (!shaghafBackendReady && shaghafBackendConfigured) {
-      await initializeShaghafBackend();
-      for (var attempt = 0; attempt < 30 && !shaghafBackendReady; attempt++) {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-      }
-    }
-    if (!shaghafBackendReady) {
-      if (mounted) setState(() {
-        connected = false;
-        connectionMessage = 'تعذر الاتصال بخادم شغف. تحقق من إعداد الاتصال ثم حاول التحديث.';
-      });
-      return;
-    }
     if (loadingRemote) return;
-    if (mounted) setState(() { loadingRemote = true; connectionMessage = null; });
+    if (mounted) {
+      setState(() {
+        loadingRemote = true;
+        connectionMessage = null;
+      });
+    }
     try {
-      final rows = await Supabase.instance.client.rpc('search_published_videos', params: {
-        'p_query': query.trim(),
-        'p_category': null,
-        'p_limit': _pageSize,
-        'p_offset': loadMore ? remoteVideos.length : 0,
-      }) as List<dynamic>;
+      // Initialize the backend after the screen has already entered its loading
+      // state, so users never mistake a slow startup for an empty library.
+      if (!shaghafBackendReady && shaghafBackendConfigured) {
+        await initializeShaghafBackend();
+        for (var attempt = 0; attempt < 30 && !shaghafBackendReady; attempt++) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+      }
+      if (!shaghafBackendReady) {
+        throw StateError('Shaghaf backend is not ready');
+      }
+
+      final client = Supabase.instance.client;
+      final offset = loadMore ? remoteVideos.length : 0;
+      List<dynamic> rows;
+
+      // Prefer the paginated search RPC. If it has not been deployed in the
+      // connected Supabase project yet, fall back to the published table query.
+      try {
+        rows = await client.rpc('search_published_videos', params: {
+          'p_query': query.trim(),
+          'p_category': null,
+          'p_limit': _pageSize,
+          'p_offset': offset,
+        }) as List<dynamic>;
+      } catch (_) {
+        rows = await client
+            .from('videos')
+            .select('title,description,category,language,video_url,created_at')
+            .eq('status', 'published')
+            .order('created_at', ascending: false)
+            .range(offset, offset + _pageSize - 1);
+      }
+
       final items = rows.map<ShaghafVideo>((row) {
         final data = Map<String, dynamic>.from(row);
+        final videoUrl = (data['video_url'] ?? '').toString().trim();
+        final youtubeId = YoutubePlayer.convertUrlToId(videoUrl);
         return ShaghafVideo(
           title: (data['title'] ?? '').toString(),
           description: (data['description'] ?? '').toString(),
           category: (data['category'] ?? 'متنوع').toString(),
-          thumbnail: YoutubePlayer.convertUrlToId((data['video_url'] ?? '').toString()) == null
+          thumbnail: youtubeId == null
               ? ''
-              : 'https://img.youtube.com/vi/${YoutubePlayer.convertUrlToId((data['video_url'] ?? '').toString())}/hqdefault.jpg',
-          videoUrl: (data['video_url'] ?? '').toString(),
+              : 'https://img.youtube.com/vi/$youtubeId/hqdefault.jpg',
+          videoUrl: videoUrl,
           sourceName: 'مكتبة شغف • ${data['language'] ?? 'العربية'}',
         );
-      }).where((video) => video.title.isNotEmpty && video.videoUrl.startsWith('https://')).toList();
-      if (mounted) setState(() {
-        remoteVideos = loadMore ? [...remoteVideos, ...items] : items;
-        hasMoreRemote = items.length == _pageSize;
-        connected = true;
-      });
+      }).where((video) =>
+          video.title.isNotEmpty &&
+          video.videoUrl.startsWith('https://') &&
+          (query.trim().isEmpty ||
+              '${video.title} ${video.description} ${video.category}'
+                  .toLowerCase().contains(query.trim().toLowerCase()))).toList();
+
+      if (mounted) {
+        setState(() {
+          remoteVideos = loadMore ? [...remoteVideos, ...items] : items;
+          hasMoreRemote = rows.length == _pageSize;
+          connected = true;
+          if (remoteVideos.isEmpty) {
+            connectionMessage =
+                'اتصل خادم شغف بنجاح، لكن لا توجد فيديوهات منشورة بعد. أضف فيديوهات من لوحة المدير ثم اعتمدها للنشر.';
+          }
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() {
-        connected = false;
-        connectionMessage = 'تعذر تحديث المكتبة الآن. تحقق من اتصال الإنترنت ثم حاول التحديث مرة أخرى.';
-      });
+      if (mounted) {
+        setState(() {
+          connected = false;
+          connectionMessage =
+              'تعذّر جلب الفيديوهات من خادم شغف. تحقق من إعداد الاتصال وصلاحية قراءة الفيديوهات المنشورة.';
+        });
+      }
     } finally {
       if (mounted) setState(() => loadingRemote = false);
     }
