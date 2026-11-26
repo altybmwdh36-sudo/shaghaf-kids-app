@@ -37,6 +37,60 @@ jobs:
         run: sed -i '/<application/i\\    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
       - name: Get dependencies
         run: flutter pub get
+      - name: Apply Android Gradle compatibility fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import glob
+
+          # Patch the deprecated ProGuard file reference that currently stops
+          # flutter_inappwebview_android from configuring under the current AGP.
+          plugin_files = glob.glob(str(Path.home() / ".pub-cache/hosted/pub.dev/flutter_inappwebview_android-*/android/build.gradle"))
+          if not plugin_files:
+              raise SystemExit("flutter_inappwebview_android Gradle file was not found after flutter pub get.")
+          for name in plugin_files:
+              p = Path(name)
+              source = p.read_text()
+              updated = source.replace("proguard-android.txt", "proguard-android-optimize.txt")
+              if updated != source:
+                  p.write_text(updated)
+                  print(f"Updated deprecated ProGuard reference in {p}")
+              else:
+                  print(f"No deprecated ProGuard reference found in {p}")
+
+          # Keep the supplied root-project adjustment in the generated Android
+          # Gradle file without replacing Flutter's generated configuration.
+          root = Path("android/build.gradle")
+          if not root.exists():
+              raise SystemExit("Generated android/build.gradle was not found.")
+          source = root.read_text()
+          marker = "SHAGHAF_INAPPWEBVIEW_RELEASE_MINIFY_FIX"
+          if marker not in source:
+              block = '''
+          // SHAGHAF_INAPPWEBVIEW_RELEASE_MINIFY_FIX
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.name == 'flutter_inappwebview_android') {
+                      project.android {
+                          buildTypes {
+                              release {
+                                  minifyEnabled false
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+          '''
+              if "tasks.register(\"clean\"" in source:
+                  source = source.replace('tasks.register("clean"', block + '\\ntasks.register("clean"', 1)
+              else:
+                  source += "\\n" + block
+              root.write_text(source)
+              print("Merged the release minification adjustment into android/build.gradle")
+          else:
+              print("The Shaghaf Gradle adjustment is already present.")
+          PY
       - name: Normalize Android plugin compile SDK to 36
         run: |
           python3 - <<'PY'
