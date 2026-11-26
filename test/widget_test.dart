@@ -5,11 +5,12 @@ import 'package:shaghaf_kids_app/main.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('يعرض التطبيق شاشة الدخول المجاني', (tester) async {
+  testWidgets('يفتح التطبيق مباشرة في وضع الزائر دون رمز تحقق', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const ShaghafApp());
     await tester.pumpAndSettle();
     expect(find.text('✦ شَغَف ✦'), findsOneWidget);
-    expect(find.text('إرسال رمز التحقق'), findsOneWidget);
+    expect(find.textContaining('أهلاً زائر'), findsOneWidget);
+    expect(find.text('إرسال رمز التحقق'), findsNothing);
   });
 }
