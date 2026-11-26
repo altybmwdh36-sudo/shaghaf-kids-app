@@ -339,6 +339,21 @@ class _VideoAdminState extends State<_VideoAdmin> {
     for (final selectedName in selected) {
       final categoryName = topics.containsKey(selectedName) ? selectedName : 'بحث مخصص';
       final terms = topics[selectedName] ?? selectedName;
+      // YouTube Data API discovery is admin-only on the server.
+      // Results are saved as pending candidates and never published automatically.
+      try {
+        final response = await Supabase.instance.client.functions.invoke(
+          'youtube-search',
+          body: {'q': terms, 'category': categoryName, 'maxResults': 4},
+        );
+        final payload = response.data;
+        if (payload is Map) {
+          imported += (payload['imported_count'] as num?)?.toInt() ?? 0;
+          checked += (payload['found_count'] as num?)?.toInt() ?? 0;
+        }
+      } catch (_) {
+        errors.add('YouTube Data API');
+      }
       try {
         final uri = Uri.https('commons.wikimedia.org', '/w/api.php', {
           'action': 'query', 'format': 'json', 'generator': 'search',
@@ -446,7 +461,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       }
     }
     if (mounted) setState(() => message =
-        'اكتمل البحث في المصادر المفتوحة: أُضيف $imported فيديو إلى قائمة المراجعة من $checked نتيجة مفحوصة. لم يُنشر أي فيديو تلقائياً.'
+        'اكتمل البحث في YouTube والمصادر المفتوحة: أُضيف $imported فيديو إلى قائمة المراجعة من $checked نتيجة مفحوصة. لم يُنشر أي فيديو تلقائياً.'
         '${errors.isEmpty ? '' : ' تعذر الوصول إلى بعض المصادر: ${errors.toSet().join('، ')}'}');
     await loadVideos();
     if (mounted) setState(() => discovering = false);
@@ -483,7 +498,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
     const Text('اكتشاف الفيديوهات حسب محتوى شَغَف', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
-    const Text('اختر الأقسام التي تريد إثراءها، أو اكتب موضوعاً خاصاً. يبحث المحرك في أكثر من مكتبة عامة، وتدخل كل النتائج قائمة المراجعة فقط.'),
+    const Text('اختر الأقسام التي تريد إثراءها، أو اكتب موضوعاً خاصاً. يبحث المحرك في YouTube ومكتبات عامة أخرى، وتدخل كل النتائج قائمة المراجعة فقط. لا تظهر نتائج YouTube للمشتركين قبل مراجعتها واعتمادها.'),
     const SizedBox(height: 10),
     const Text('الأقسام الأساسية', style: TextStyle(fontWeight: FontWeight.bold)),
     ...[
