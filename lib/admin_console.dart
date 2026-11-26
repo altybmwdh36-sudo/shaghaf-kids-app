@@ -271,7 +271,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       'User-Agent': 'ShaghafApp/1.0 (educational video discovery)',
     }).timeout(const Duration(seconds: 18));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('HTTP \${response.statusCode}');
+      throw Exception('HTTP ${response.statusCode}');
     }
     return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
   }
@@ -366,8 +366,8 @@ class _VideoAdminState extends State<_VideoAdmin> {
           checked++;
           final titleText = _cleanText(page['title']).replaceFirst(RegExp(r'^File:', caseSensitive: false), '');
           final desc = [meta('ImageDescription'), 'صفحة الملف: $pageUrl',
-            'المؤلف: \${meta('Artist')}', 'الاعتماد: \${meta('Credit')}',
-            'الرخصة: $license \${meta('LicenseUrl')}'].where((v) => v.trim().isNotEmpty).join('\n');
+            'المؤلف: ${meta('Artist')}', 'الاعتماد: ${meta('Credit')}',
+            'الرخصة: $license ${meta('LicenseUrl')}'].where((v) => v.trim().isNotEmpty).join('\n');
           if (await _saveSearchCandidate(title: titleText, description: desc,
               categoryName: categoryName, url: direct, source: 'Wikimedia Commons')) imported++;
         }
@@ -397,9 +397,9 @@ class _VideoAdminState extends State<_VideoAdmin> {
           }
           if (mp4 == null) continue;
           final fileName = _cleanText(mp4['name'], 300);
-          final direct = 'https://archive.org/download/\${Uri.encodeComponent(identifier)}/\${Uri.encodeComponent(fileName)}';
+          final direct = 'https://archive.org/download/${Uri.encodeComponent(identifier)}/${Uri.encodeComponent(fileName)}';
           checked++;
-          final desc = [_cleanText(doc['description'], 900), 'المؤلف: \${_cleanText(doc['creator'], 200)}',
+          final desc = [_cleanText(doc['description'], 900), 'المؤلف: ${_cleanText(doc['creator'], 200)}',
             'الرخصة: $license', 'صفحة المصدر: https://archive.org/details/$identifier']
               .where((v) => v.trim().isNotEmpty).join('\n');
           if (await _saveSearchCandidate(title: _cleanText(doc['title'], 180),
@@ -447,7 +447,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
     }
     if (mounted) setState(() => message =
         'اكتمل البحث في المصادر المفتوحة: أُضيف $imported فيديو إلى قائمة المراجعة من $checked نتيجة مفحوصة. لم يُنشر أي فيديو تلقائياً.'
-        '\${errors.isEmpty ? '' : ' تعذر الوصول إلى بعض المصادر: \${errors.toSet().join('، ')}'}');
+        '${errors.isEmpty ? '' : ' تعذر الوصول إلى بعض المصادر: ${errors.toSet().join('، ')}'}');
     await loadVideos();
     if (mounted) setState(() => discovering = false);
   }
