@@ -83,9 +83,9 @@ jobs:
           }
           '''
               if "tasks.register(\"clean\"" in source:
-                  source = source.replace('tasks.register("clean"', block + '\\ntasks.register("clean"', 1)
+                  source = source.replace('tasks.register("clean"', block + '\ntasks.register("clean"', 1)
               else:
-                  source += "\\n" + block
+                  source += "\n" + block
               root.write_text(source)
               print("Merged the release minification adjustment into android/build.gradle")
           else:
