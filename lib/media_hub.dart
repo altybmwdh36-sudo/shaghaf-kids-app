@@ -145,7 +145,6 @@ class VideoLibraryScreen extends StatefulWidget {
 }
 
 class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
-  String category = 'الكل';
   String query = '';
   final TextEditingController searchController = TextEditingController();
   List<ShaghafVideo> remoteVideos = [];
@@ -191,7 +190,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
     try {
       final rows = await Supabase.instance.client.rpc('search_published_videos', params: {
         'p_query': query.trim(),
-        'p_category': category == 'الكل' ? null : category,
+        'p_category': null,
         'p_limit': _pageSize,
         'p_offset': loadMore ? remoteVideos.length : 0,
       }) as List<dynamic>;
@@ -226,9 +225,8 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   List<ShaghafVideo> get filteredVideos {
     final q = query.trim().toLowerCase();
     return allVideos.where((video) {
-      final categoryMatch = category == 'الكل' || video.category == category;
       final text = '${video.title} ${video.description} ${video.category} ${video.sourceName}'.toLowerCase();
-      return categoryMatch && (q.isEmpty || text.contains(q));
+      return q.isEmpty || text.contains(q);
     }).toList();
   }
 
@@ -243,7 +241,6 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final videos = filteredVideos;
-    final categories = ['الكل', ...{..._shaghafVideos.map((v) => v.category), ...remoteVideos.map((v) => v.category)}];
     return Directionality(
       textDirection: TextDirection.rtl,
       child: RefreshIndicator(
@@ -274,16 +271,6 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  height: 42,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: categories.map((item) => Padding(
-                      padding: const EdgeInsetsDirectional.only(end: 8),
-                      child: ChoiceChip(label: Text(item), selected: category == item, onSelected: (_) { setState(() => category = item); refreshOnlineVideos(); }),
-                    )).toList(),
-                  ),
-                ),
               ]),
             ),
           ),
