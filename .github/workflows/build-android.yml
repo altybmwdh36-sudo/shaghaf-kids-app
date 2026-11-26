@@ -43,11 +43,10 @@ jobs:
           from pathlib import Path
           import glob
 
-          # Patch the deprecated ProGuard file reference that currently stops
-          # flutter_inappwebview_android from configuring under the current AGP.
+          # Replace the obsolete ProGuard config name in the cached Android plugin.
           plugin_files = glob.glob(str(Path.home() / ".pub-cache/hosted/pub.dev/flutter_inappwebview_android-*/android/build.gradle"))
           if not plugin_files:
-              raise SystemExit("flutter_inappwebview_android Gradle file was not found after flutter pub get.")
+              raise SystemExit("flutter_inappwebview_android Gradle file was not found.")
           for name in plugin_files:
               p = Path(name)
               source = p.read_text()
@@ -58,38 +57,13 @@ jobs:
               else:
                   print(f"No deprecated ProGuard reference found in {p}")
 
-          # Keep the supplied root-project adjustment in the generated Android
-          # Gradle file without replacing Flutter's generated configuration.
-          root = Path("android/build.gradle")
-          if not root.exists():
-              raise SystemExit("Generated android/build.gradle was not found.")
-          source = root.read_text()
-          marker = "SHAGHAF_INAPPWEBVIEW_RELEASE_MINIFY_FIX"
-          if marker not in source:
-              block = '''
-          // SHAGHAF_INAPPWEBVIEW_RELEASE_MINIFY_FIX
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.name == 'flutter_inappwebview_android') {
-                      project.android {
-                          buildTypes {
-                              release {
-                                  minifyEnabled false
-                              }
-                          }
-                      }
-                  }
-              }
-          }
-          '''
-              if "tasks.register(\"clean\"" in source:
-                  source = source.replace('tasks.register("clean"', block + '\ntasks.register("clean"', 1)
-              else:
-                  source += "\n" + block
-              root.write_text(source)
-              print("Merged the release minification adjustment into android/build.gradle")
-          else:
-              print("The Shaghaf Gradle adjustment is already present.")
+          # Flutter 3.50 generates Kotlin DSL by default; validate the generated
+          # root Gradle file rather than assuming the older Groovy filename.
+          root_kts = Path("android/build.gradle.kts")
+          root_groovy = Path("android/build.gradle")
+          if not root_kts.exists() and not root_groovy.exists():
+              raise SystemExit("Neither android/build.gradle.kts nor android/build.gradle exists.")
+          print("Detected Android root Gradle file:", root_kts if root_kts.exists() else root_groovy)
           PY
       - name: Normalize Android plugin compile SDK to 36
         run: |
