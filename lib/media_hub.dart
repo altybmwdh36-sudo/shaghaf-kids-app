@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -109,7 +110,7 @@ class VideoLibraryScreen extends StatefulWidget {
   State<VideoLibraryScreen> createState() => _VideoLibraryScreenState();
 }
 
-class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
+class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBindingObserver {
   String query = '';
   final TextEditingController searchController = TextEditingController();
   List<ShaghafVideo> remoteVideos = [];
@@ -118,17 +119,33 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   static const int _pageSize = 30;
   bool connected = false;
   String? connectionMessage;
+  Timer? _connectionRetryTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     query = widget.initialQuery;
     searchController.text = query;
     refreshOnlineVideos();
+    // Retry the online library periodically so a connection restored after
+    // opening the screen is picked up without requiring an app restart.
+    _connectionRetryTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (mounted && !connected && !loadingRemote) refreshOnlineVideos();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted && !loadingRemote) {
+      refreshOnlineVideos();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _connectionRetryTimer?.cancel();
     searchController.dispose();
     super.dispose();
   }
