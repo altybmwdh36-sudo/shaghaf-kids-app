@@ -102,41 +102,6 @@ class ShaghafVideo {
   final String title, description, category, thumbnail, videoUrl, sourceName;
 }
 
-const _shaghafVideos = <ShaghafVideo>[
-  ShaghafVideo(
-    title: 'كيف نطلق المركبات إلى الفضاء؟',
-    description: 'تعرّف إلى الصواريخ وكيف تحمل الأقمار والمركبات إلى الفضاء',
-    category: 'الفضاء',
-    thumbnail: '',
-    videoUrl: 'https://spaceplace.nasa.gov/review/launching-into-space/how-do-we-launch-things-into-space_1920x1080.mp4',
-    sourceName: 'NASA Space Place • الإنجليزية',
-  ),
-  ShaghafVideo(
-    title: 'ما هو الكسوف الشمسي؟',
-    description: 'شرح مصوّر لكيفية مرور القمر بين الشمس والأرض',
-    category: 'العلوم',
-    thumbnail: '',
-    videoUrl: 'https://spaceplace.nasa.gov/review/eclipse-snap/what-is-a-solar-eclipse_1920x1080.mp4',
-    sourceName: 'NASA Space Place • الإنجليزية',
-  ),
-  ShaghafVideo(
-    title: 'هل توجد كواكب تشبه الأرض؟',
-    description: 'اكتشف الكواكب التي تدور حول نجوم بعيدة وكيف يبحث العلماء عنها',
-    category: 'الفضاء',
-    thumbnail: '',
-    videoUrl: 'https://spaceplace.nasa.gov/review/exoplanet-snap/searching-for-other-planets-like-ours_1920x1080.mp4',
-    sourceName: 'NASA Space Place • الإنجليزية',
-  ),
-  ShaghafVideo(
-    title: 'كمية الماء على كوكب الأرض',
-    description: 'حقائق علمية مصوّرة عن المياه المالحة والعذبة على كوكبنا',
-    category: 'الطبيعة',
-    thumbnail: '',
-    videoUrl: 'https://spaceplace.nasa.gov/review/water/how-much-water-is-on-earth_1920x1080.mp4',
-    sourceName: 'NASA Space Place • الإنجليزية',
-  ),
-];
-
 class VideoLibraryScreen extends StatefulWidget {
   const VideoLibraryScreen({super.key, this.initialQuery = ''});
   final String initialQuery;
@@ -213,14 +178,14 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
     } catch (_) {
       if (mounted) setState(() {
         connected = false;
-        connectionMessage = 'تعذر تحديث المكتبة الآن. اعرض المحتوى المتاح وحاول التحديث لاحقاً.';
+        connectionMessage = 'تعذر تحديث المكتبة الآن. تحقق من اتصال الإنترنت ثم حاول التحديث مرة أخرى.';
       });
     } finally {
       if (mounted) setState(() => loadingRemote = false);
     }
   }
 
-  List<ShaghafVideo> get allVideos => [...remoteVideos, ..._shaghafVideos];
+  List<ShaghafVideo> get allVideos => remoteVideos;
 
   List<ShaghafVideo> get filteredVideos {
     final q = query.trim().toLowerCase();
