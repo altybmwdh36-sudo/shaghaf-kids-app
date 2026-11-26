@@ -183,7 +183,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
                   onSubmitted: (value) => searchYouTube(value),
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
-                    hintText: 'ابحث في YouTube ومكتبة شغف...', prefixIcon: const Icon(Icons.search),
+                    hintText: 'ابحث في فيديوهات شغف المعتمدة...', prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: () => searchYouTube(searchController.text)),
                     filled: true, fillColor: Colors.white,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -330,8 +330,9 @@ class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
     }
     final next = VideoPlayerController.networkUrl(Uri.parse(widget.video.videoUrl));
     try {
-      await next.initialize();
+      await next.initialize().timeout(const Duration(seconds: 25));
       await next.setLooping(false);
+      await next.setVolume(1.0);
       if (!mounted) { await next.dispose(); return; }
       setState(() { controller = next; loading = false; });
       await next.play();
@@ -363,7 +364,7 @@ class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
           Expanded(child: Center(
             child: loading ? const CircularProgressIndicator(color: Colors.white)
               : error != null ? Column(mainAxisSize: MainAxisSize.min, children: [Padding(padding: const EdgeInsets.all(24), child: Text(error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)), OutlinedButton.icon(onPressed: () { setState(() { loading = true; error = null; }); initializeVideo(); }, icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة'))])
-              : youtubeController != null ? YoutubePlayer(controller: youtubeController!, showVideoProgressIndicator: true)
+              : youtubeController != null ? AspectRatio(aspectRatio: 16 / 9, child: YoutubePlayer(controller: youtubeController!, showVideoProgressIndicator: true))
               : player != null && player.value.isInitialized ? AspectRatio(aspectRatio: player.value.aspectRatio, child: VideoPlayer(player))
               : const SizedBox.shrink(),
           )),
