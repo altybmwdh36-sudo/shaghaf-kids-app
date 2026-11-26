@@ -170,10 +170,19 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
   }
 
   Future<void> refreshOnlineVideos({bool loadMore = false}) async {
+    // Backend startup runs asynchronously with the first app frame. Wait for
+    // that initialization here so the first visit to the media tab does not
+    // incorrectly fall back to the local catalog.
+    if (!shaghafBackendReady && shaghafBackendConfigured) {
+      await initializeShaghafBackend();
+      for (var attempt = 0; attempt < 30 && !shaghafBackendReady; attempt++) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+    }
     if (!shaghafBackendReady) {
       if (mounted) setState(() {
         connected = false;
-        connectionMessage = 'المكتبة المحلية متاحة؛ ربط المكتبة المباشرة يتطلب إعداد خادم شغف.';
+        connectionMessage = 'تعذر الاتصال بخادم شغف. تحقق من إعداد الاتصال ثم حاول التحديث.';
       });
       return;
     }
