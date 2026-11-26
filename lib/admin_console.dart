@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend.dart';
 
@@ -263,36 +265,191 @@ class _VideoAdminState extends State<_VideoAdmin> {
     } catch (_) { if (mounted) setState(() => message = 'تعذر حذف الفيديو.'); }
   }
 
+  Future<Map<String, dynamic>> _getJson(Uri uri) async {
+    final response = await http.get(uri, headers: const {
+      'Accept': 'application/json',
+      'User-Agent': 'ShaghafApp/1.0 (educational video discovery)',
+    }).timeout(const Duration(seconds: 18));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('HTTP \${response.statusCode}');
+    }
+    return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+  }
+
+  String _cleanText(dynamic value, [int max = 1000]) {
+    final valueText = value?.toString().replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ').trim() ?? '';
+    return valueText.length > max ? valueText.substring(0, max) : valueText;
+  }
+
+  Future<bool> _saveSearchCandidate({
+    required String title,
+    required String description,
+    required String categoryName,
+    required String url,
+    required String source,
+    String languageName = 'غير محددة',
+  }) async {
+    if (title.isEmpty || !url.startsWith('https://')) return false;
+    final db = Supabase.instance.client;
+    final exists = await db.from('videos').select('id')
+        .eq('video_url', url).maybeSingle();
+    if (exists != null) return false;
+    await db.from('videos').insert({
+      'title': title.substring(0, title.length > 180 ? 180 : title.length),
+      'description': [description, 'المصدر: $source'].where((v) => v.isNotEmpty).join('\n\n'),
+      'category': categoryName,
+      'language': languageName,
+      'video_url': url,
+      'status': 'pending',
+      'allow_comments': false,
+      'created_by': db.auth.currentUser!.id,
+    });
+    return true;
+  }
+
   Future<void> discoverVideos() async {
     if (discoveryCategories.isEmpty && discoveryTopic.text.trim().isEmpty) {
       setState(() => message = 'اختر قسماً أو اكتب موضوعاً مخصصاً للبحث.');
       return;
     }
     setState(() { discovering = true; message = null; });
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'discover-videos',
-        body: {
-          'categories': discoveryCategories.toList(),
-          'topic': discoveryTopic.text.trim(),
-          'max_per_section': 4,
-        },
-      );
-      if (response.status < 200 || response.status >= 300) {
-        throw Exception('HTTP ${response.status}');
+    var imported = 0;
+    var checked = 0;
+    final errors = <String>[];
+    final selected = discoveryCategories.toList();
+    if (discoveryTopic.text.trim().isNotEmpty) selected.add(discoveryTopic.text.trim());
+    final topics = <String, String>{
+      'التعليم والمعرفة': 'educational science learning lessons',
+      'التحفيز والدراسة': 'study motivation student success learning',
+      'الاختراعات والهندسة': 'inventions engineering robotics technology',
+      'الدين والأخلاق': 'Islam Islamic education morals Quran',
+      'قصص الأنبياء والصالحين': 'prophets stories Islamic history',
+      'القرآن الكريم': 'Quran recitation education',
+      'العلوم والاكتشاف': 'science discovery nature space astronomy',
+      'الفكاهة النظيفة': 'family friendly clean educational comedy',
+      'الطبيعة والوثائقيات': 'nature environment documentary',
+    };
+    final nasaTopics = <String, String>{
+      'التعليم والمعرفة': 'science education Earth science',
+      'الاختراعات والهندسة': 'engineering technology robotics',
+      'العلوم والاكتشاف': 'space science astronomy',
+      'الطبيعة والوثائقيات': 'Earth oceans nature',
+    };
+    for (final selectedName in selected) {
+      final categoryName = topics.containsKey(selectedName) ? selectedName : 'بحث مخصص';
+      final terms = topics[selectedName] ?? selectedName;
+      try {
+        final uri = Uri.https('commons.wikimedia.org', '/w/api.php', {
+          'action': 'query', 'format': 'json', 'generator': 'search',
+          'gsrsearch': 'filetype:video $terms', 'gsrnamespace': '6',
+          'gsrlimit': '4', 'prop': 'imageinfo', 'iiprop': 'url|mime|extmetadata',
+          'iiextmetadatafilter': 'LicenseShortName|LicenseUrl|Artist|Credit|ImageDescription',
+        });
+        final data = await _getJson(uri);
+        final pages = (data['query']?['pages'] as Map?)?.values ?? const [];
+        for (final rawPage in pages) {
+          final page = Map<String, dynamic>.from(rawPage as Map);
+          final infos = page['imageinfo'] as List? ?? const [];
+          if (infos.isEmpty) continue;
+          final info = Map<String, dynamic>.from(infos.first as Map);
+          final ext = Map<String, dynamic>.from(info['extmetadata'] as Map? ?? {});
+          String meta(String key) => _cleanText((ext[key] as Map?)?['value'], 700);
+          final license = meta('LicenseShortName');
+          final direct = _cleanText(info['url'], 1000);
+          final pageUrl = _cleanText(info['descriptionurl'], 1000);
+          final mime = _cleanText(info['mime']).toLowerCase();
+          final allowed = RegExp(r'^(CC BY 4\.0|CC BY-SA 4\.0|CC BY 3\.0|CC BY-SA 3\.0|CC0 1\.0|Public domain)', caseSensitive: false).hasMatch(license);
+          if (!allowed || !['video/mp4', 'video/webm'].contains(mime) ||
+              !RegExp(r'^https://upload\.wikimedia\.org/wikipedia/commons/.+\.(mp4|webm)$', caseSensitive: false).hasMatch(direct) ||
+              !pageUrl.startsWith('https://commons.wikimedia.org/wiki/File:')) continue;
+          checked++;
+          final titleText = _cleanText(page['title']).replaceFirst(RegExp(r'^File:', caseSensitive: false), '');
+          final desc = [meta('ImageDescription'), 'صفحة الملف: $pageUrl',
+            'المؤلف: \${meta('Artist')}', 'الاعتماد: \${meta('Credit')}',
+            'الرخصة: $license \${meta('LicenseUrl')}'].where((v) => v.trim().isNotEmpty).join('\n');
+          if (await _saveSearchCandidate(title: titleText, description: desc,
+              categoryName: categoryName, url: direct, source: 'Wikimedia Commons')) imported++;
+        }
+      } catch (_) { errors.add('Wikimedia Commons'); }
+
+      try {
+        final q = Uri.https('archive.org', '/advancedsearch.php', {
+          'q': 'mediatype:movies AND (title:"$terms" OR description:"$terms")',
+          'fl[]': 'identifier,title,description,creator,licenseurl', 'rows': '4', 'output': 'json',
+        });
+        final data = await _getJson(q);
+        final docs = data['response']?['docs'] as List? ?? const [];
+        for (final rawDoc in docs) {
+          final doc = Map<String, dynamic>.from(rawDoc as Map);
+          final identifier = _cleanText(doc['identifier'], 120);
+          final license = _cleanText(doc['licenseurl'], 500);
+          if (!RegExp(r'creativecommons\.org/(licenses/by(-sa)?/4\.0|publicdomain/zero/1\.0)', caseSensitive: false).hasMatch(license) ||
+              !RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(identifier)) continue;
+          final meta = await _getJson(Uri.https('archive.org', '/metadata/$identifier'));
+          final files = meta['files'] as List? ?? const [];
+          Map? mp4;
+          for (final rawFile in files) {
+            if (rawFile is Map && _cleanText(rawFile['name']).toLowerCase().endsWith('.mp4') &&
+                !_cleanText(rawFile['name']).contains('/') && _cleanText(rawFile['source']) != 'metadata') {
+              mp4 = rawFile; break;
+            }
+          }
+          if (mp4 == null) continue;
+          final fileName = _cleanText(mp4['name'], 300);
+          final direct = 'https://archive.org/download/\${Uri.encodeComponent(identifier)}/\${Uri.encodeComponent(fileName)}';
+          checked++;
+          final desc = [_cleanText(doc['description'], 900), 'المؤلف: \${_cleanText(doc['creator'], 200)}',
+            'الرخصة: $license', 'صفحة المصدر: https://archive.org/details/$identifier']
+              .where((v) => v.trim().isNotEmpty).join('\n');
+          if (await _saveSearchCandidate(title: _cleanText(doc['title'], 180),
+              description: desc, categoryName: categoryName, url: direct,
+              source: 'Internet Archive')) imported++;
+        }
+      } catch (_) { errors.add('Internet Archive'); }
+
+      final nasaTerm = nasaTopics[selectedName];
+      if (nasaTerm != null) {
+        try {
+          final uri = Uri.https('images-api.nasa.gov', '/search', {
+            'q': nasaTerm, 'media_type': 'video', 'page_size': '4',
+          });
+          final data = await _getJson(uri);
+          final items = data['collection']?['items'] as List? ?? const [];
+          for (final rawItem in items) {
+            final item = Map<String, dynamic>.from(rawItem as Map);
+            final metaList = item['data'] as List? ?? const [];
+            if (metaList.isEmpty) continue;
+            final meta = Map<String, dynamic>.from(metaList.first as Map);
+            final asset = _cleanText(item['href'], 1000);
+            if (!asset.startsWith('https://images-assets.nasa.gov/')) continue;
+            final response = await http.get(Uri.parse(asset), headers: const {
+              'User-Agent': 'ShaghafApp/1.0',
+            }).timeout(const Duration(seconds: 18));
+            if (response.statusCode < 200 || response.statusCode >= 300) continue;
+            final assets = jsonDecode(response.body);
+            if (assets is! List) continue;
+            String? direct;
+            for (final value in assets.whereType<String>()) {
+              if (RegExp(r'^https://images-assets\.nasa\.gov/video/[a-zA-Z0-9_./-]+\.mp4(?:\?.*)?$', caseSensitive: false).hasMatch(value)) {
+                direct = value; break;
+              }
+            }
+            if (direct == null) continue;
+            checked++;
+            if (await _saveSearchCandidate(title: _cleanText(meta['title'], 180),
+                description: _cleanText(meta['description'], 1000),
+                categoryName: categoryName, url: direct,
+                source: 'NASA Image and Video Library', languageName: 'الإنجليزية')) imported++;
+          }
+        } catch (_) { errors.add('NASA'); }
       }
-      final data = Map<String, dynamic>.from(response.data as Map);
-      final count = data['imported_count'] ?? 0;
-      final skipped = data['skipped_count'] ?? 0;
-      if (mounted) setState(() => message =
-        'انتهى البحث في المصادر المتاحة. أضيف $count مقطعاً إلى قائمة المراجعة، وتعذر إدراج $skipped مرشحاً. لا يُنشر أي فيديو تلقائياً.');
-      await loadVideos();
-    } catch (_) {
-      if (mounted) setState(() => message =
-        'تعذر تنفيذ البحث. تأكد من نشر وظيفة discover-videos وأن حسابك يملك صلاحية المدير.');
-    } finally {
-      if (mounted) setState(() => discovering = false);
     }
+    if (mounted) setState(() => message =
+        'اكتمل البحث في المصادر المفتوحة: أُضيف $imported فيديو إلى قائمة المراجعة من $checked نتيجة مفحوصة. لم يُنشر أي فيديو تلقائياً.'
+        '\${errors.isEmpty ? '' : ' تعذر الوصول إلى بعض المصادر: \${errors.toSet().join('، ')}'}');
+    await loadVideos();
+    if (mounted) setState(() => discovering = false);
   }
 
   Future<void> publish() async {
@@ -361,7 +518,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
       icon: discovering ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
       label: Text(discovering ? 'جارٍ البحث في المصادر...' : 'ابحث واجلب المرشحين للمراجعة'),
     ),
-    const Text('المصادر الحالية: Wikimedia Commons وInternet Archive، وNASA للعلوم والفضاء. لا تعني نتائج البحث أو الرخصة أن الفيديو آمن؛ يجب فحصه كاملاً قبل النشر.',
+    const Text('محرك شغف يبحث مباشرة في Wikimedia Commons وInternet Archive وNASA. كل نتيجة تدخل قائمة المراجعة ولا تُنشر تلقائياً؛ يجب فحص الفيديو كاملاً قبل اعتماده.',
       style: TextStyle(fontSize: 12, color: Colors.black54)),
     const Divider(height: 30),
     const Text('إضافة فيديو يدوياً', style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
