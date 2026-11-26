@@ -26,41 +26,6 @@ class _MediaHubScreenState extends State<MediaHubScreen> {
   }
 }
 
-class _HubTile extends StatelessWidget {
-  const _HubTile({
-    required this.icon,
-    required this.title,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(14),
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFFE1F0E8) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: selected ? _green : Colors.black12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: _green),
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      ),
-    ),
-  );
-}
-
 class ShaghafVideo {
   const ShaghafVideo({required this.title, required this.description, required this.category, required this.thumbnail, required this.videoUrl, required this.sourceName});
   final String title, description, category, thumbnail, videoUrl, sourceName;
