@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend.dart';
 
@@ -63,6 +64,8 @@ class _HubTile extends StatelessWidget {
 class ShaghafVideo {
   const ShaghafVideo({required this.title, required this.description, required this.category, required this.thumbnail, required this.videoUrl, required this.sourceName});
   final String title, description, category, thumbnail, videoUrl, sourceName;
+
+  String? get youtubeId => YoutubePlayer.convertUrlToId(videoUrl);
 }
 
 class VideoLibraryScreen extends StatefulWidget {
@@ -110,6 +113,37 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
     _connectionRetryTimer?.cancel();
     searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> searchYouTube(String searchTerm) async {
+    final term = searchTerm.trim();
+    if (term.isEmpty || !shaghafBackendReady) return;
+    if (mounted) setState(() { loadingRemote = true; connectionMessage = null; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'youtube-search', body: {'q': term, 'maxResults': 12},
+      );
+      final payload = response.data;
+      final items = (payload is Map ? payload['items'] : null);
+      if (items is! List) throw Exception('Invalid YouTube search response');
+      final found = items.map<ShaghafVideo>((raw) {
+        final item = Map<String, dynamic>.from(raw as Map);
+        final id = (item['videoId'] ?? '').toString();
+        return ShaghafVideo(
+          title: (item['title'] ?? '').toString(),
+          description: (item['description'] ?? '').toString(),
+          category: 'نتائج بحث • قيد المراجعة',
+          thumbnail: (item['thumbnail'] ?? '').toString(),
+          videoUrl: 'https://www.youtube.com/watch?v=$id',
+          sourceName: 'YouTube • ${item['channelTitle'] ?? ''}',
+        );
+      }).where((v) => v.youtubeId != null && v.title.isNotEmpty).toList();
+      if (mounted) setState(() { remoteVideos = found; hasMoreRemote = false; connected = true; });
+    } catch (_) {
+      if (mounted) setState(() { connectionMessage = 'تعذر البحث في YouTube. تأكد من إعداد خدمة البحث ومفتاح API.'; });
+    } finally {
+      if (mounted) setState(() => loadingRemote = false);
+    }
   }
 
   Future<void> refreshOnlineVideos({bool loadMore = false}) async {
@@ -205,11 +239,11 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
                 TextField(
                   controller: searchController,
                   onChanged: (value) => setState(() => query = value),
-                  onSubmitted: (_) => refreshOnlineVideos(),
+                  onSubmitted: (value) => searchYouTube(value),
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
-                    hintText: 'ابحث في مكتبة شغف على الإنترنت...', prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: () => refreshOnlineVideos()),
+                    hintText: 'ابحث في YouTube ومكتبة شغف...', prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(icon: const Icon(Icons.arrow_forward), onPressed: () => searchYouTube(searchController.text)),
                     filled: true, fillColor: Colors.white,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                   ),
@@ -331,6 +365,7 @@ class _ShaghafVideoPage extends StatefulWidget {
 
 class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
   VideoPlayerController? controller;
+  YoutubePlayerController? youtubeController;
   bool loading = true;
   String? error;
 
@@ -338,6 +373,20 @@ class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
   void initState() { super.initState(); initializeVideo(); }
 
   Future<void> initializeVideo() async {
+    final youtubeId = widget.video.youtubeId;
+    if (youtubeId != null) {
+      try {
+        final nextYoutube = YoutubePlayerController(
+          initialVideoId: youtubeId,
+          flags: const YoutubePlayerFlags(autoPlay: true, enableCaption: true),
+        );
+        if (!mounted) { nextYoutube.dispose(); return; }
+        setState(() { youtubeController = nextYoutube; loading = false; });
+      } catch (_) {
+        if (mounted) setState(() { loading = false; error = 'تعذّر فتح فيديو YouTube.'; });
+      }
+      return;
+    }
     final next = VideoPlayerController.networkUrl(Uri.parse(widget.video.videoUrl));
     try {
       await next.initialize();
@@ -352,7 +401,7 @@ class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
   }
 
   @override
-  void dispose() { controller?.dispose(); super.dispose(); }
+  void dispose() { controller?.dispose(); youtubeController?.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -373,6 +422,7 @@ class _ShaghafVideoPageState extends State<_ShaghafVideoPage> {
           Expanded(child: Center(
             child: loading ? const CircularProgressIndicator(color: Colors.white)
               : error != null ? Column(mainAxisSize: MainAxisSize.min, children: [Padding(padding: const EdgeInsets.all(24), child: Text(error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center)), OutlinedButton.icon(onPressed: () { setState(() { loading = true; error = null; }); initializeVideo(); }, icon: const Icon(Icons.refresh), label: const Text('إعادة المحاولة'))])
+              : youtubeController != null ? YoutubePlayer(controller: youtubeController!, showVideoProgressIndicator: true)
               : player != null && player.value.isInitialized ? AspectRatio(aspectRatio: player.value.aspectRatio, child: VideoPlayer(player))
               : const SizedBox.shrink(),
           )),
