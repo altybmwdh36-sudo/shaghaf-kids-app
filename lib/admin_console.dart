@@ -221,6 +221,7 @@ class _VideoAdminState extends State<_VideoAdmin> {
   final category = TextEditingController(text: 'العلوم والفضاء');
   final sourceUrl = TextEditingController();
   final discoveryTopic = TextEditingController();
+  PlatformFile? selectedVideoFile;
   final Set<String> discoveryCategories = {'التعليم والمعرفة', 'العلوم والاكتشاف'};
   String language = 'العربية';
   bool busy = false;
