@@ -103,7 +103,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
         }
       }
       if (!shaghafBackendReady) {
-        throw StateError('Shaghaf backend is not ready');
+        throw StateError(shaghafBackendError ?? 'تعذر تهيئة اتصال Supabase. تحقق من مفتاح النشر ورابط المشروع.');
       }
 
       final client = Supabase.instance.client;
@@ -164,7 +164,7 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
       if (mounted) {
         final detail = e is PostgrestException
             ? 'قاعدة البيانات (' + (e.code ?? 'بدون رمز') + '): ' + e.message
-            : 'نوع الخطأ: ' + e.runtimeType.toString();
+            : e.toString();
         setState(() {
           connected = false;
           connectionMessage = 'تعذّر جلب الفيديوهات من خادم شغف. ' + detail;
