@@ -160,12 +160,14 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> with WidgetsBin
           }
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
+        final detail = e is PostgrestException
+            ? 'قاعدة البيانات (' + (e.code ?? 'بدون رمز') + '): ' + e.message
+            : 'نوع الخطأ: ' + e.runtimeType.toString();
         setState(() {
           connected = false;
-          connectionMessage =
-              'تعذّر جلب الفيديوهات من خادم شغف. تحقق من إعداد الاتصال وصلاحية قراءة الفيديوهات المنشورة.';
+          connectionMessage = 'تعذّر جلب الفيديوهات من خادم شغف. ' + detail;
         });
       }
     } finally {
