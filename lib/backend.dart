@@ -7,22 +7,29 @@ const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 bool get shaghafBackendConfigured => _supabaseAnonKey.isNotEmpty;
 
 bool shaghafBackendReady = false;
-bool _initializing = false;
+Future<bool>? _initializationFuture;
 
-Future<bool> initializeShaghafBackend() async {
-  if (shaghafBackendReady) return true;
-  if (!shaghafBackendConfigured || _initializing) return false;
-  _initializing = true;
+/// All callers share one initialization attempt. This prevents the app startup
+/// and screens from racing and one caller incorrectly receiving a temporary
+/// "not ready" result while another caller is still initializing Supabase.
+Future<bool> initializeShaghafBackend() {
+  if (shaghafBackendReady) return Future<bool>.value(true);
+  if (!shaghafBackendConfigured) return Future<bool>.value(false);
+  return _initializationFuture ??= _initializeBackend();
+}
+
+Future<bool> _initializeBackend() async {
   try {
     await Supabase.initialize(
       url: _supabaseUrl,
       publishableKey: _supabaseAnonKey,
     );
     shaghafBackendReady = true;
+    return true;
   } catch (_) {
     shaghafBackendReady = false;
+    return false;
   } finally {
-    _initializing = false;
+    _initializationFuture = null;
   }
-  return shaghafBackendReady;
 }
