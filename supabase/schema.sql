@@ -113,6 +113,10 @@ using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
 drop policy if exists "published videos visible" on public.videos;
 create policy "published videos visible" on public.videos for select to anon, authenticated
 using (status = 'published' or public.is_shaghaf_admin());
+
+-- Table privileges are required in addition to RLS policies.
+-- RLS still limits anon/authenticated members to published rows; admins can review all rows.
+grant select on table public.videos to anon, authenticated;
 drop policy if exists "admin manages videos" on public.videos;
 create policy "admin manages videos" on public.videos for all to authenticated
 using (public.is_shaghaf_admin()) with check (public.is_shaghaf_admin());
