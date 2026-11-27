@@ -7,6 +7,7 @@ const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 bool get shaghafBackendConfigured => _supabaseAnonKey.isNotEmpty;
 
 bool shaghafBackendReady = false;
+String? shaghafBackendError;
 Future<bool>? _initializationFuture;
 
 /// All callers share one initialization attempt. This prevents the app startup
@@ -20,14 +21,19 @@ Future<bool> initializeShaghafBackend() {
 
 Future<bool> _initializeBackend() async {
   try {
+    if (_supabaseAnonKey.trim().isEmpty) {
+      throw StateError('مفتاح Supabase غير موجود في نسخة التطبيق.');
+    }
     await Supabase.initialize(
       url: _supabaseUrl,
-      publishableKey: _supabaseAnonKey,
+      publishableKey: _supabaseAnonKey.trim(),
     );
     shaghafBackendReady = true;
+    shaghafBackendError = null;
     return true;
-  } catch (_) {
+  } catch (error) {
     shaghafBackendReady = false;
+    shaghafBackendError = error.toString();
     return false;
   } finally {
     _initializationFuture = null;
