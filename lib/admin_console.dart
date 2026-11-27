@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'backend.dart';
@@ -494,29 +495,79 @@ class _VideoAdminState extends State<_VideoAdmin> {
     if (mounted) setState(() => discovering = false);
   }
 
+  Future<void> chooseVideoFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.video, allowMultiple: false, withData: true);
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      final extension = (file.extension ?? '').toLowerCase();
+      if (!const {'mp4', 'm4v', 'mov', 'webm'}.contains(extension)) {
+        setState(() => message = 'الصيغ المدعومة حالياً: MP4 وM4V وMOV وWEBM.');
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        setState(() => message = 'حجم الملف يتجاوز 50 ميجابايت. اختر فيديو أصغر حالياً؛ يمكن رفع الحد عند تجهيز خدمة فيديو مخصصة.');
+        return;
+      }
+      setState(() {
+        selectedVideoFile = file;
+        sourceUrl.clear();
+        message = 'تم اختيار الفيديو. سيُرفع إلى مساحة تخزين شغف ثم يدخل المراجعة.';
+      });
+    } catch (_) {
+      if (mounted) setState(() => message = 'تعذر اختيار ملف الفيديو من الجهاز.');
+    }
+  }
+
   Future<void> publish() async {
     final source = sourceUrl.text.trim();
     final uri = Uri.tryParse(source);
     final extension = uri?.path.toLowerCase().split('.').last ?? '';
-    if (title.text.trim().isEmpty || uri == null || uri.scheme != 'https' ||
-        !const {'mp4', 'm4v', 'mov', 'webm', 'm3u8'}.contains(extension)) {
-      setState(() => message = 'أدخل عنوان الفيديو ورابط HTTPS مباشرًا لملف MP4 أو M4V أو MOV أو WEBM أو HLS. روابط صفحات يوتيوب لا تعمل في المشغّل الحالي.');
+    final hasUpload = selectedVideoFile != null;
+    if (title.text.trim().isEmpty ||
+        (!hasUpload && (uri == null || uri.scheme != 'https' ||
+          !const {'mp4', 'm4v', 'mov', 'webm', 'm3u8'}.contains(extension)))) {
+      setState(() => message = 'أدخل عنوان الفيديو واختر ملفاً من جهازك أو أدخل رابط HTTPS مباشر لفيديو.');
       return;
     }
     setState(() { busy = true; message = null; });
     try {
       final db = Supabase.instance.client;
+      var videoUrl = source;
+      if (hasUpload) {
+        final file = selectedVideoFile!;
+        final bytes = file.bytes;
+        if (bytes == null || bytes.isEmpty) throw StateError('تعذر قراءة بيانات ملف الفيديو.');
+        final ext = (file.extension ?? 'mp4').toLowerCase();
+        final contentType = switch (ext) {
+          'webm' => 'video/webm',
+          'mov' => 'video/quicktime',
+          'm4v' => 'video/x-m4v',
+          _ => 'video/mp4',
+        };
+        final safeName = file.name.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+        final path = '${db.auth.currentUser!.id}/${DateTime.now().microsecondsSinceEpoch}_$safeName';
+        await db.storage.from('shaghaf-videos').uploadBinary(
+          path, bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: false),
+        );
+        videoUrl = db.storage.from('shaghaf-videos').getPublicUrl(path);
+      }
       await db.from('videos').insert({
         'title': title.text.trim(), 'description': description.text.trim(),
         'category': category.text.trim(), 'language': language,
-        'video_url': source, 'status': 'pending',
+        'video_url': videoUrl, 'status': 'pending',
         'allow_comments': true, 'created_by': db.auth.currentUser!.id,
       });
       title.clear(); description.clear(); sourceUrl.clear();
-      setState(() => message = 'تم إرسال الفيديو إلى قائمة المراجعة. لن يظهر للمشتركين قبل اعتماده ونشره من المدير.');
+      setState(() {
+        selectedVideoFile = null;
+        message = 'تم رفع الفيديو إلى تخزين شغف وإرساله للمراجعة. لن يظهر للمشتركين قبل اعتماده ونشره من المدير.';
+      });
       await loadVideos();
-    } catch (_) {
-      if (mounted) setState(() => message = 'تعذر حفظ الفيديو. تحقق من إعداد قاعدة البيانات وصلاحيات المدير.');
+    } catch (e) {
+      if (mounted) setState(() => message =
+        'تعذر رفع الفيديو أو تسجيله. تحقق من صلاحية رفع الملفات في Storage وسعة التخزين واتصال الإنترنت. (${e.runtimeType})');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -577,14 +628,26 @@ class _VideoAdminState extends State<_VideoAdmin> {
     const SizedBox(height: 10),
     const ListTile(leading: Icon(Icons.verified_user_outlined), title: Text('حالة النشر: قيد المراجعة'), subtitle: Text('كل فيديو جديد يُرسل للمراجعة أولاً. النشر متاح للمدير بعد فحص المحتوى والمصدر.'),),
     const SizedBox(height: 10),
-    const Center(child: Text('أدخل رابط HTTPS مباشرًا لملف MP4 أو HLS؛ روابط صفحات يوتيوب لا تعمل في المشغّل الحالي')),
-    TextField(controller: sourceUrl, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'رابط الفيديو', border: OutlineInputBorder())),
+    const Text('رفع فيديو من الجهاز إلى مساحة تخزين شغف', style: TextStyle(fontWeight: FontWeight.bold)),
+    OutlinedButton.icon(
+      onPressed: busy ? null : chooseVideoFile,
+      icon: const Icon(Icons.video_file_outlined),
+      label: Text(selectedVideoFile == null ? 'اختيار ملف فيديو' : 'تغيير الفيديو المختار'),
+    ),
+    if (selectedVideoFile != null)
+      Text('الملف: ${selectedVideoFile!.name} • ${(selectedVideoFile!.size / (1024 * 1024)).toStringAsFixed(1)} ميجابايت',
+        style: const TextStyle(fontSize: 12, color: Colors.black54)),
+    const SizedBox(height: 8),
+    const Text('أو يمكنك إدخال رابط HTTPS مباشر لفيديو مستضاف بالفعل.'),
+    TextField(controller: sourceUrl, keyboardType: TextInputType.url,
+      onChanged: (value) { if (value.trim().isNotEmpty && selectedVideoFile != null) setState(() => selectedVideoFile = null); },
+      decoration: const InputDecoration(labelText: 'رابط فيديو مباشر (اختياري عند رفع ملف)', border: OutlineInputBorder())),
     if (message != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(message!)),
     const SizedBox(height: 14),
     FilledButton.icon(onPressed: busy ? null : publish, icon: const Icon(Icons.publish),
       label: Text(busy ? 'جارٍ الإرسال...' : 'إرسال الفيديو للمراجعة')),
     const SizedBox(height: 8),
-    const Text('تُحفظ روابط الفيديو في قاعدة شغف، ولا تظهر للمشتركين إلا بعد اعتمادها ونشرها من المدير.',
+    const Text('تُرفع الملفات إلى مساحة تخزين شغف وتُسجل بياناتها في قاعدة البيانات، ولا تظهر للمشتركين إلا بعد اعتمادها ونشرها من المدير.',
       style: TextStyle(fontSize: 12, color: Colors.black54)),
     const Divider(height: 32),
     const Text('الفيديوهات المسجلة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
