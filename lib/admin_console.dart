@@ -33,24 +33,66 @@ class _AdminConsoleScreenState extends State<AdminConsoleScreen> {
       return;
     }
     setState(() { busy = true; error = null; });
-    try {
-      final ready = await initializeShaghafBackend();
-      if (!ready) throw const AuthException('تعذر تهيئة الاتصال بقاعدة البيانات.');
-      final client = Supabase.instance.client;
-      await client.auth.signInWithPassword(email: email.text.trim(), password: password.text);
-      final profile = await client.from('profiles').select('role').eq('id', client.auth.currentUser!.id).maybeSingle();
-      if (profile?['role'] != 'admin') {
-        await client.auth.signOut();
-        throw const AuthException('هذا الحساب لا يملك صلاحية مدير التطبيق.');
+
+    final clientReady = await initializeShaghafBackend();
+    if (!clientReady) {
+      if (mounted) {
+        setState(() {
+          error = 'تعذر تهيئة اتصال Supabase. تحقق من رابط المشروع ومفتاح Publishable في إعدادات البناء.';
+          busy = false;
+        });
       }
+      return;
+    }
+
+    final client = Supabase.instance.client;
+    var signedInThisAttempt = false;
+    var loginAuthorized = false;
+    try {
+      await client.auth.signInWithPassword(
+        email: email.text.trim(),
+        password: password.text,
+      );
+      signedInThisAttempt = true;
+
+      final user = client.auth.currentUser;
+      if (user == null) {
+        throw const AuthException('تم تسجيل الدخول لكن تعذر قراءة بيانات الحساب. حاول مرة أخرى.');
+      }
+
+      final profile = await client
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (profile?['role']?.toString() != 'admin') {
+        throw const AuthException(
+          'تم التحقق من الحساب، لكن لا توجد له صلاحية مدير. تحقق من سجل profiles وأن role تساوي admin.',
+        );
+      }
+
+      loginAuthorized = true;
       if (mounted) setState(() => authorized = true);
     } on AuthException catch (e) {
       if (mounted) setState(() => error = e.message);
     } on PostgrestException catch (e) {
-      if (mounted) setState(() => error = 'تعذر التحقق من صلاحيات المدير: ${e.message}');
+      if (mounted) {
+        setState(() => error = 'تعذر قراءة صلاحية المدير من profiles: ${e.message}');
+      }
     } catch (e) {
-      if (mounted) setState(() => error = 'تعذر الاتصال بالخادم. تحقق من إعداد قاعدة البيانات والإنترنت.');
+      if (mounted) {
+        setState(() => error = 'حدث خطأ أثناء التحقق من صلاحية المدير. تحقق من الإنترنت وسياسات RLS.');
+      }
     } finally {
+      // Never leave an authenticated but unverified account signed in.
+      if (signedInThisAttempt && !loginAuthorized) {
+        try {
+          await client.auth.signOut();
+        } catch (_) {
+          // Preserve the original sign-in/authorization error for the user.
+        }
+      }
       if (mounted) setState(() => busy = false);
     }
   }
